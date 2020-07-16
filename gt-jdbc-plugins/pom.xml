@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- =======================================================================    
+        Maven Project Configuration File                                        
+                                                                                
+        The Geotools Project                                                    
+            http://www.geotools.org/                                            
+                                                                                
+        Version: $Id$              
+     ======================================================================= -->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 
+                               http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>org.geotools</groupId>
+    <artifactId>plugin</artifactId>
+    <version>14.5</version>
+  </parent>
+
+  <properties>
+    <geotools.version>14.5</geotools.version>
+  </properties>
+
+  <!-- =========================================================== -->
+  <!--     Module Description                                      -->
+  <!-- =========================================================== -->
+  <groupId>com.abonaro.gis.geotools.jdbc</groupId>
+  <artifactId>gt-jdbc</artifactId>
+  <version>14.5.1</version>
+  <packaging>pom</packaging>
+  <name>JDBC DataStore Plugins</name>
+  
+  <scm>
+    <connection>scm:git:git://github.com/openabnr/gt-jdbc-plugins.git</connection>
+    <developerConnection>scm:git:[fetch=]git://github.com/openabnr/gt-jdbc-plugins.git[push=]git@github.com:openabnr/gt-jdbc-plugins.git</developerConnection>
+    <url>https://github.com/openabnr/gt-jdbc-plugins</url>
+  </scm>
+
+  <licenses>
+    <license>
+      <name>Lesser General Public License (LGPL)</name>
+      <url>http://www.gnu.org/copyleft/lesser.txt</url>
+      <distribution>repo</distribution>
+    </license>
+  </licenses>
+
+
+  <!-- =========================================================== -->
+  <!--     Developers and Contributors                             -->
+  <!-- =========================================================== -->
+  <developers>
+    <developer>
+      <name>Justin Deoliveira</name>
+      <id>jdeolive</id>
+      <email>jdeolive@users.sourceforge.net</email>
+      <organization>TOPP</organization>
+      <roles>
+        <role>Module Maintainer</role>
+        <role>Java Developer</role>
+      </roles>
+    </developer>
+  </developers>
+
+  <dependencies>
+    <dependency>
+      <groupId>com.abonaro.gis.geotools</groupId>
+      <artifactId>gt-jdbc</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+  </dependencies>
+  
+  <build>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <artifactId>maven-compiler-plugin</artifactId>
+          <version>3.6.0</version>
+          <configuration>
+            <source>1.7</source>
+            <target>1.7</target>
+            <!-- <compilerArgument>-Xlint:all</compilerArgument> -->
+            <showWarnings>false</showWarnings>
+            <showDeprecation>false</showDeprecation>
+          </configuration>
+        </plugin>
+      <plugin>
+        <artifactId>maven-source-plugin</artifactId>
+        <version>3.0.1</version>
+        <executions>
+          <execution>
+          <id>attach-sources</id>
+          <goals>
+            <goal>jar</goal>
+          </goals>
+          </execution>
+        </executions>
+     </plugin>
+        <plugin>
+          <artifactId>maven-surefire-plugin</artifactId>
+          <version>2.19.1</version>
+          <configuration>
+            <skipTests>true</skipTests>
+          </configuration>
+        </plugin>
+        <!--This plugin's configuration is used to store Eclipse m2e settings only. It has no influence on the Maven build itself. -->
+        <plugin>
+          <groupId>org.eclipse.m2e</groupId>
+          <artifactId>lifecycle-mapping</artifactId>
+          <version>1.0.0</version>
+          <configuration>
+            <lifecycleMappingMetadata>
+              <pluginExecutions>
+                <pluginExecution>
+                  <pluginExecutionFilter>
+                    <groupId>pl.project13.maven</groupId>
+                    <artifactId>git-commit-id-plugin</artifactId>
+                    <versionRange>[2.1.2,)</versionRange>
+                    <goals>
+                      <goal>revision</goal>
+                    </goals>
+                  </pluginExecutionFilter>
+                  <action>
+                    <ignore></ignore>
+                  </action>
+                </pluginExecution>
+              </pluginExecutions>
+            </lifecycleMappingMetadata>
+          </configuration>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+  </build>
+
+  <modules>
+    <module>gt-jdbc-oracle</module>
+    <module>gt-jdbc-postgis</module>
+    <module>gt-jdbc-mysql</module>
+    <module>gt-jdbc-spatialite</module>
+  </modules>
+  
+  <distributionManagement>
+    <repository>
+      <id>abnr.nexus.release</id>
+      <name>ABONARO Nexus Repository</name>
+      <url>http://dev.abonaro.kr/nexus3/repository/maven-releases/</url>
+    </repository>
+  </distributionManagement>
+
+  <repositories>
+    <repository>
+      <id>geotools</id>
+      <name>geotools</name>
+      <url>https://repo.osgeo.org/repository/release/</url>
+    </repository>
+  </repositories>
+  
+</project>

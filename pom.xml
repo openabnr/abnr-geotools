@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- =======================================================================    
+        Maven Project Configuration File                                        
+                                                                                
+        The Geotools Project                                                    
+            http://www.geotools.org/                                            
+                                                                                
+        Version: $Id$              
+     ======================================================================= -->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 
+                               http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <properties>
+    <geotools.version>14.5</geotools.version>
+  </properties>
+
+  <groupId>com.abonaro.gis.geotools</groupId>
+  <artifactId>geotools</artifactId>
+  <version>14.5.1</version>
+  <packaging>pom</packaging>
+  <name>ABONARO Geotools</name>
+  
+  <modules>
+    <module>gt-geojson</module>
+    <module>gt-geopkg</module>
+    <module>gt-jdbc</module>
+    <module>gt-jdbc-plugins</module>
+    <module>gt-shapefile</module>
+  </modules>
+  
+  <distributionManagement>
+    <repository>
+      <id>abnr.nexus.release</id>
+      <name>ABONARO Nexus Repository</name>
+      <url>http://dev.abonaro.kr/nexus3/repository/maven-releases/</url>
+    </repository>
+  </distributionManagement>
+
+  <repositories>
+    <repository>
+      <id>geotools</id>
+      <name>geotools</name>
+      <url>https://repo.osgeo.org/repository/release/</url>
+    </repository>
+  </repositories>
+  
+</project>
