@@ -218,9 +218,9 @@ public class PostGISDialect extends BasicSQLDialect {
   }
 
   /**
-   * Enables/disables usage of ST_Simplify geometry wrapping when 
+   * Enables/disables usage of ST_Simplify geometry wrapping when
    * the Query contains a geometry simplification hint
-   * 
+   *
    * @param simplifyEnabled
    */
   public void setSimplifyEnabled(boolean simplifyEnabled) {
@@ -609,7 +609,7 @@ public class PostGISDialect extends BasicSQLDialect {
 
       // fall back on inspection of the first geometry, assuming uniform srid (fair assumption
       // an unpredictable srid makes the table un-queriable)
-      //JD: In postgis 2.0 forward there is no way to leave a geometry srid unset since 
+      //JD: In postgis 2.0 forward there is no way to leave a geometry srid unset since
       // geometry_columns is a view populated from system tables, so we check for 0 and take
       // that to mean unset
 
@@ -871,8 +871,8 @@ public class PostGISDialect extends BasicSQLDialect {
     overrides.put(Types.DOUBLE, "NUMERIC");
     overrides.put(Types.FLOAT, "NUMERIC");
 
-    overrides.put(Types.DATE, "VARCHAR");
-    overrides.put(Types.TIMESTAMP, "VARCHAR");
+    //overrides.put(Types.DATE, "VARCHAR");
+    //overrides.put(Types.TIMESTAMP, "VARCHAR");
   }
 
   @Override
@@ -964,7 +964,7 @@ public class PostGISDialect extends BasicSQLDialect {
             sql = "DELETE FROM GEOMETRY_COLUMNS"
               + " WHERE f_table_catalog=''" //
               + " AND f_table_schema = '" + schemaName + "'" //
-              + " AND f_table_name = '" + tableName + "'" // 
+              + " AND f_table_name = '" + tableName + "'" //
               + " AND f_geometry_column = '" + gd.getLocalName() + "'";
 
             LOGGER.fine(sql);
@@ -983,11 +983,11 @@ public class PostGISDialect extends BasicSQLDialect {
             // add srid checks
             if (srid > -1) {
               sql = "ALTER TABLE " //
-                + "\"" + schemaName + "\"" // 
+                + "\"" + schemaName + "\"" //
                 + "." //
                 + "\"" + tableName + "\"" //
-                + " ADD CONSTRAINT \"enforce_srid_" // 
-                + gd.getLocalName() + "\""// 
+                + " ADD CONSTRAINT \"enforce_srid_" //
+                + gd.getLocalName() + "\""//
                 + " CHECK (ST_SRID(" //
                 + "\"" + gd.getLocalName() + "\"" //
                 + ") = " + srid + ")";
@@ -997,11 +997,11 @@ public class PostGISDialect extends BasicSQLDialect {
 
             // add dimension checks
             sql = "ALTER TABLE " //
-              + "\"" + schemaName + "\"" // 
+              + "\"" + schemaName + "\"" //
               + "." //
               + "\"" + tableName + "\"" //
-              + " ADD CONSTRAINT \"enforce_dims_" // 
-              + gd.getLocalName() + "\""// 
+              + " ADD CONSTRAINT \"enforce_dims_" //
+              + gd.getLocalName() + "\""//
               + " CHECK (st_ndims(\"" + gd.getLocalName() + "\")" //
               + " = " + dimensions + ")";
             LOGGER.fine(sql);
@@ -1010,7 +1010,7 @@ public class PostGISDialect extends BasicSQLDialect {
             // add geometry type checks
             if (!geomType.equals("GEOMETRY")) {
               sql = "ALTER TABLE " //
-                + "\"" + schemaName + "\"" // 
+                + "\"" + schemaName + "\"" //
                 + "." //
                 + "\"" + tableName + "\"" //
                 + " ADD CONSTRAINT \"enforce_geotype_" //
@@ -1026,10 +1026,10 @@ public class PostGISDialect extends BasicSQLDialect {
           }
 
           // add the spatial index
-          sql = "CREATE INDEX \"spatial_" + tableName // 
-            + "_" + gd.getLocalName().toLowerCase() + "\""// 
+          sql = "CREATE INDEX \"spatial_" + tableName //
+            + "_" + gd.getLocalName().toLowerCase() + "\""//
             + " ON " //
-            + "\"" + schemaName + "\"" // 
+            + "\"" + schemaName + "\"" //
             + "." //
             + "\"" + tableName + "\"" //
             + " USING GIST (" //
