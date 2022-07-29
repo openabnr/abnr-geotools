@@ -19,7 +19,7 @@
 
   <groupId>com.abonaro.gis.geotools</groupId>
   <artifactId>geotools</artifactId>
-  <version>14.5.1</version>
+  <version>14.5.2</version>
   <packaging>pom</packaging>
   <name>ABONARO Geotools</name>
   
@@ -35,7 +35,7 @@
     <repository>
       <id>abnr.nexus.release</id>
       <name>ABONARO Nexus Repository</name>
-      <url>http://dev.abonaro.kr/nexus3/repository/maven-releases/</url>
+      <url>https://dev.abonaro.kr/nexus3/repository/maven-releases/</url>
     </repository>
   </distributionManagement>
 
