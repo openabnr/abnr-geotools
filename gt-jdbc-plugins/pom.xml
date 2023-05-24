@@ -28,7 +28,7 @@
   <!-- =========================================================== -->
   <groupId>com.abonaro.gis.geotools.jdbc</groupId>
   <artifactId>gt-jdbc</artifactId>
-  <version>14.5.2</version>
+  <version>14.5.3</version>
   <packaging>pom</packaging>
   <name>JDBC DataStore Plugins</name>
   

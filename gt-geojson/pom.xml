@@ -29,7 +29,7 @@
   <!-- =========================================================== -->
   <groupId>com.abonaro.gis.geotools</groupId>
   <artifactId>gt-geojson</artifactId>
-  <version>14.5.2</version>
+  <version>14.5.3</version>
 
   <packaging>jar</packaging>
   <name>GeoJSON Support</name>
