@@ -18,22 +18,24 @@ package org.geotools.geopkg;
 
 /**
  * Raster entry in a geopackage.
- * <p>
- * This class corresponds to the "raster_columns" table.
- * </p>
+ *
+ * <p>This class corresponds to the "raster_columns" table.
+ *
  * @author Justin Deoliveira, OpenGeo
  */
 public class RasterEntry extends Entry {
 
     public static enum Rectification {
-        None(0), Geo(1), Ortho(2);
+        None(0),
+        Geo(1),
+        Ortho(2);
 
         int value;
 
         Rectification(int value) {
             this.value = value;
         }
-        
+
         public int value() {
             return value;
         }
@@ -62,11 +64,11 @@ public class RasterEntry extends Entry {
     public String getRasterColumn() {
         return rasterColumn;
     }
-    
+
     public void setRasterColumn(String rasterColumn) {
         this.rasterColumn = rasterColumn;
     }
-   
+
     void init(RasterEntry e) {
         super.init(e);
         setRasterColumn(e.getRasterColumn());

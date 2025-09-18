@@ -19,7 +19,6 @@ package org.geotools.geopkg;
 import java.io.File;
 import java.io.IOException;
 import java.util.Map;
-
 import org.apache.commons.dbcp.BasicDataSource;
 import org.geotools.geopkg.geom.GeoPkgGeomWriter;
 import org.geotools.jdbc.JDBCDataStore;
@@ -29,34 +28,35 @@ import org.sqlite.SQLiteConfig;
 
 /**
  * The GeoPackage DataStore Factory.
- * 
+ *
  * @author Justin Deoliveira
  * @author Niels Charlier
- *
  */
 public class GeoPkgDataStoreFactory extends JDBCDataStoreFactory {
 
     /** parameter for database type */
     public static final Param DBTYPE = new Param("dbtype", String.class, "Type", true, "geopkg");
-    
-    /** optional user parameter */
-    public static final Param USER = new Param(JDBCDataStoreFactory.USER.key, JDBCDataStoreFactory.USER.type, 
-            JDBCDataStoreFactory.USER.description, false, JDBCDataStoreFactory.USER.sample);
-    
-    /** parameter for database instance */
-    public static final Param DATABASE = new Param("database", File.class, "Database", true );
 
-    /**
-     * base location to store database files
-     */
+    /** optional user parameter */
+    public static final Param USER = new Param(
+            JDBCDataStoreFactory.USER.key,
+            JDBCDataStoreFactory.USER.type,
+            JDBCDataStoreFactory.USER.description,
+            false,
+            JDBCDataStoreFactory.USER.sample);
+
+    /** parameter for database instance */
+    public static final Param DATABASE = new Param("database", File.class, "Database", true);
+
+    /** base location to store database files */
     File baseDirectory = null;
-        
+
     GeoPkgGeomWriter.Configuration writerConfig;
-    
+
     public GeoPkgDataStoreFactory() {
         this.writerConfig = new GeoPkgGeomWriter.Configuration();
     }
-    
+
     public GeoPkgDataStoreFactory(GeoPkgGeomWriter.Configuration writerConfig) {
         this.writerConfig = writerConfig;
     }
@@ -113,23 +113,23 @@ public class GeoPkgDataStoreFactory extends JDBCDataStoreFactory {
     @Override
     protected void setupParameters(Map parameters) {
         super.setupParameters(parameters);
-        
-        //remove unneccessary parameters
+
+        // remove unneccessary parameters
         parameters.remove(HOST.key);
         parameters.remove(PORT.key);
         parameters.remove(SCHEMA.key);
-        
-        //replace database with File database
+
+        // replace database with File database
         parameters.put(DATABASE.key, DATABASE);
-        //replace user to make optional
+        // replace user to make optional
         parameters.put(USER.key, USER);
-        //replace dbtype
+        // replace dbtype
         parameters.put(DBTYPE.key, DBTYPE);
     }
 
     @Override
     public BasicDataSource createDataSource(Map params) throws IOException {
-        //create a datasource
+        // create a datasource
         BasicDataSource dataSource = new BasicDataSource();
 
         // driver
@@ -137,16 +137,16 @@ public class GeoPkgDataStoreFactory extends JDBCDataStoreFactory {
 
         // url
         dataSource.setUrl(getJDBCUrl(params));
-        
-        //dataSource.setMaxActive(1);
-        //dataSource.setMinIdle(1);
 
-        //dataSource.setTestOnBorrow(true);
-        //dataSource.setValidationQuery(getValidationQuery());
+        // dataSource.setMaxActive(1);
+        // dataSource.setMinIdle(1);
+
+        // dataSource.setTestOnBorrow(true);
+        // dataSource.setValidationQuery(getValidationQuery());
         addConnectionProperties(dataSource);
-        
+
         dataSource.setAccessToUnderlyingConnectionAllowed(true);
-        
+
         return dataSource;
     }
 
@@ -160,11 +160,10 @@ public class GeoPkgDataStoreFactory extends JDBCDataStoreFactory {
         SQLiteConfig config = new SQLiteConfig();
         config.setSharedCache(true);
         config.enableLoadExtension(true);
-        //config.enableSpatiaLite(true);
-        
+        // config.enableSpatiaLite(true);
+
         for (Map.Entry e : config.toProperties().entrySet()) {
-            dataSource.addConnectionProperty((String)e.getKey(), (String)e.getValue());
+            dataSource.addConnectionProperty((String) e.getKey(), (String) e.getValue());
         }
     }
-
 }

@@ -21,10 +21,9 @@ import java.util.List;
 
 /**
  * Tiles Entry inside a GeoPackage.
- * 
+ *
  * @author Justin Deoliveira
  * @author Niels Charlier
- *
  */
 public class TileEntry extends Entry {
 
@@ -46,5 +45,4 @@ public class TileEntry extends Entry {
         super.init(e);
         setTileMatricies(e.getTileMatricies());
     }
-
 }

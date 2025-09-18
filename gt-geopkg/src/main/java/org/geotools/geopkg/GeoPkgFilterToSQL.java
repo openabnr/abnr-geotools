@@ -16,19 +16,16 @@
  */
 package org.geotools.geopkg;
 
+import com.vividsolutions.jts.geom.Envelope;
+import com.vividsolutions.jts.geom.Geometry;
 import java.io.IOException;
 import java.io.Writer;
 import java.sql.Time;
 import java.sql.Timestamp;
-
 import org.geotools.data.jdbc.FilterToSQLException;
 import org.geotools.filter.FilterCapabilities;
 import org.geotools.jdbc.PreparedFilterToSQL;
 import org.geotools.jdbc.PrimaryKeyColumn;
-
-import com.vividsolutions.jts.geom.Envelope;
-import com.vividsolutions.jts.geom.Geometry;
-
 import org.opengis.feature.type.AttributeDescriptor;
 import org.opengis.filter.Filter;
 import org.opengis.filter.expression.Literal;
@@ -48,10 +45,7 @@ public class GeoPkgFilterToSQL extends PreparedFilterToSQL {
         this.dialect = dialect;
     }
 
-    /**
-     * Override done to ensure we don't complain if there is a BBOX filter, even if we claim not to
-     * support it
-     */
+    /** Override done to ensure we don't complain if there is a BBOX filter, even if we claim not to support it */
     public void encode(Filter filter) throws FilterToSQLException {
         if (out == null) throw new FilterToSQLException("Can't encode to a null writer.");
         // hack, we lied about being able to support BBOX, because the implementation is
@@ -86,12 +80,11 @@ public class GeoPkgFilterToSQL extends PreparedFilterToSQL {
         if (!isPrepareEnabled()) return super.visit(expression, context);
 
         // evaluate the literal and store it for later
-        Object literalValue =
-                evaluateLiteral(expression, (context instanceof Class ? (Class) context : null));
+        Object literalValue = evaluateLiteral(expression, (context instanceof Class ? (Class) context : null));
         literalValues.add(literalValue);
         SRIDs.add(currentSRID);
         dimensions.add(currentDimension);
-        
+
         Class clazz = null;
         if (context instanceof Class) clazz = (Class) context;
         else if (literalValue != null) clazz = literalValue.getClass();
@@ -105,8 +98,7 @@ public class GeoPkgFilterToSQL extends PreparedFilterToSQL {
                 if (Geometry.class.isAssignableFrom(literalValue.getClass())) {
                     int srid = currentSRID != null ? currentSRID : -1;
                     int dimension = currentDimension != null ? currentDimension : -1;
-                    dialect.prepareGeometryValue(
-                            (Geometry) literalValue, dimension, srid, Geometry.class, sb);
+                    dialect.prepareGeometryValue((Geometry) literalValue, dimension, srid, Geometry.class, sb);
                 } else if (Time.class.isAssignableFrom(literalValue.getClass())) {
                     sb.append("time(?,'localtime')");
                 } else if (Timestamp.class.isAssignableFrom(literalValue.getClass())) {
@@ -129,18 +121,13 @@ public class GeoPkgFilterToSQL extends PreparedFilterToSQL {
 
     @Override
     protected Object visitBinarySpatialOperator(
-            BinarySpatialOperator filter,
-            PropertyName property,
-            Literal geometry,
-            boolean swapped,
-            Object extraData) {
+            BinarySpatialOperator filter, PropertyName property, Literal geometry, boolean swapped, Object extraData) {
 
         // get the attribute, it will expand the default geom name if necessary and give access to
         // the user data
         AttributeDescriptor attribute = property.evaluate(featureType, AttributeDescriptor.class);
         if (attribute == null) {
-            throw new IllegalArgumentException(
-                    "Could not find attribute referenced as " + property);
+            throw new IllegalArgumentException("Could not find attribute referenced as " + property);
         }
         // should be ever called only with a bbox filter
         Geometry reference = geometry.evaluate(null, Geometry.class);
@@ -154,16 +141,14 @@ public class GeoPkgFilterToSQL extends PreparedFilterToSQL {
         // can we use the spatial index?
         try {
             if (primaryKey != null
-                    && Boolean.TRUE.equals(
-                            attribute.getUserData().get(GeoPkgDialect.HAS_SPATIAL_INDEX))) {
+                    && Boolean.TRUE.equals(attribute.getUserData().get(GeoPkgDialect.HAS_SPATIAL_INDEX))) {
                 // encode the primary key
                 PrimaryKeyColumn pk = primaryKey.getColumns().get(0);
                 String pkName = pk.getName();
                 filterFactory.property(pkName).accept(this, null);
                 // Make Sure the table name is escaped - GEOT-5852
                 StringBuffer sb = new StringBuffer();
-                dialect.encodeTableName(
-                        "rtree_" + featureType.getTypeName() + "_" + attribute.getLocalName(), sb);
+                dialect.encodeTableName("rtree_" + featureType.getTypeName() + "_" + attribute.getLocalName(), sb);
                 String spatial_index = sb.toString();
 
                 out.write(" IN (SELECT id FROM " + spatial_index + " r WHERE");
@@ -178,21 +163,13 @@ public class GeoPkgFilterToSQL extends PreparedFilterToSQL {
                 StringBuffer sb = new StringBuffer();
                 dialect.encodeColumnName(null, attribute.getLocalName(), sb);
                 String encodedPropertyName = sb.toString();
-                out.write(
-                        "(ST_MaxX("
-                                + encodedPropertyName
-                                + ") >= "
-                                + envelope.getMinX()
-                                + " AND\n");
-                out.write(
-                        "ST_MinX(" + encodedPropertyName + ") <= " + envelope.getMaxX() + " AND\n");
-                out.write(
-                        "ST_MaxY(" + encodedPropertyName + ") >= " + envelope.getMinY() + " AND\n");
+                out.write("(ST_MaxX(" + encodedPropertyName + ") >= " + envelope.getMinX() + " AND\n");
+                out.write("ST_MinX(" + encodedPropertyName + ") <= " + envelope.getMaxX() + " AND\n");
+                out.write("ST_MaxY(" + encodedPropertyName + ") >= " + envelope.getMinY() + " AND\n");
                 out.write("ST_MinY(" + encodedPropertyName + ") <= " + envelope.getMaxY() + ")\n");
             }
         } catch (IOException e) {
-            throw new RuntimeException(
-                    "Failure encoding the SQL equivalent for a spatial filter", e);
+            throw new RuntimeException("Failure encoding the SQL equivalent for a spatial filter", e);
         }
 
         return extraData;

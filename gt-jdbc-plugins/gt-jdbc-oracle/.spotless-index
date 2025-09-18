@@ -1,0 +1,23 @@
+mkudp3Eq2LmBVHbsIjm6D8ARCSxeW6raNoTqM4zNUh0=
+src\main\java\org\geotools\data\oracle\OracleBlobConverterFactory.java 2025-09-18T05:36:53.661154900Z
+src\main\java\org\geotools\data\oracle\OracleClobConverterFactory.java 2025-09-18T05:36:53.672157600Z
+src\main\java\org\geotools\data\oracle\OracleDateConverterFactory.java 2025-09-18T05:36:53.700721200Z
+src\main\java\org\geotools\data\oracle\OracleDialect.java 2025-09-18T05:36:53.972341800Z
+src\main\java\org\geotools\data\oracle\OracleFilterToSQL.java 2025-09-18T05:36:54.079811600Z
+src\main\java\org\geotools\data\oracle\OracleNGDataStoreFactory.java 2025-09-18T05:36:54.122415500Z
+src\main\java\org\geotools\data\oracle\OracleNGJNDIDataStoreFactory.java 2025-09-18T05:36:54.143640400Z
+src\main\java\org\geotools\data\oracle\OracleNGOCIDataStoreFactory.java 2025-09-18T05:36:54.169757600Z
+src\main\java\org\geotools\data\oracle\SDO11OracleDialect.java 2025-09-18T05:36:55.122486900Z
+src\main\java\org\geotools\data\oracle\SDOOracleDialect.java 2025-09-18T05:36:55.142587500Z
+src\main\java\org\geotools\data\oracle\sdo\AttributeList.java 2025-09-18T05:36:54.204612700Z
+src\main\java\org\geotools\data\oracle\sdo\CoordinateAccess.java 2025-09-18T05:36:54.246776300Z
+src\main\java\org\geotools\data\oracle\sdo\CoordinateAccessFactory.java 2025-09-18T05:36:54.264531900Z
+src\main\java\org\geotools\data\oracle\sdo\Coordinates.java 2025-09-18T05:36:54.344735900Z
+src\main\java\org\geotools\data\oracle\sdo\ETYPE.java 2025-09-18T05:36:54.373429800Z
+src\main\java\org\geotools\data\oracle\sdo\GeometryConverter.java 2025-09-18T05:36:54.472373800Z
+src\main\java\org\geotools\data\oracle\sdo\JGeometryConverter.java 2025-09-18T05:36:54.490668300Z
+src\main\java\org\geotools\data\oracle\sdo\OrdinateList.java 2025-09-18T05:36:54.516462200Z
+src\main\java\org\geotools\data\oracle\sdo\SDO.java 2025-09-18T05:36:55.022250300Z
+src\main\java\org\geotools\data\oracle\sdo\SDOSqlDumper.java 2025-09-18T05:36:55.072509700Z
+src\main\java\org\geotools\data\oracle\sdo\TT.java 2025-09-18T05:36:55.098895800Z
+src\main\java\org\geotools\filter\function\FilterFunction_sdonn.java 2025-09-18T05:36:55.158544500Z
