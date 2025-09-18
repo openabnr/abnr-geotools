@@ -16,7 +16,7 @@
  */
 package org.geotools.data.shapefile;
 
-import static org.geotools.data.shapefile.files.ShpFileType.*;
+import static org.geotools.data.shapefile.files.ShpFileType.FIX;
 
 import java.io.File;
 import java.io.IOException;
@@ -24,20 +24,18 @@ import java.net.URL;
 import java.nio.charset.Charset;
 import java.util.TimeZone;
 import java.util.logging.Level;
-
-import org.geotools.data.DataUtilities;
+import org.geotools.api.feature.simple.SimpleFeature;
 import org.geotools.data.shapefile.fid.FidIndexer;
 import org.geotools.data.shapefile.fid.IndexedFidWriter;
 import org.geotools.data.shapefile.files.FileWriter;
 import org.geotools.data.shapefile.files.ShpFileType;
 import org.geotools.data.shapefile.files.StorageFile;
-import org.opengis.feature.simple.SimpleFeature;
+import org.geotools.util.URLs;
 
 /**
- * A FeatureWriter for ShapefileDataStore. Uses a write and annotate technique to avoid buffering
- * attributes and geometries. Because the shape and dbf require header information which can only be
- * obtained by reading the entire series of Features, the headers are updated after the initial
- * write completes.
+ * A FeatureWriter for ShapefileDataStore. Uses a write and annotate technique to avoid buffering attributes and
+ * geometries. Because the shape and dbf require header information which can only be obtained by reading the entire
+ * series of Features, the headers are updated after the initial write completes.
  */
 class IndexedShapefileFeatureWriter extends ShapefileFeatureWriter implements FileWriter {
 
@@ -47,8 +45,8 @@ class IndexedShapefileFeatureWriter extends ShapefileFeatureWriter implements Fi
 
     private IndexManager indexes;
 
-    public IndexedShapefileFeatureWriter(IndexManager indexes,
-            ShapefileFeatureReader featureReader, Charset charset, TimeZone timeZone)
+    public IndexedShapefileFeatureWriter(
+            IndexManager indexes, ShapefileFeatureReader featureReader, Charset charset, TimeZone timeZone)
             throws IOException {
         super(indexes.shpFiles, featureReader, charset, timeZone);
         this.indexes = indexes;
@@ -96,9 +94,8 @@ class IndexedShapefileFeatureWriter extends ShapefileFeatureWriter implements Fi
         super.write();
     }
 
-    /**
-     * Release resources and flush the header information.
-     */
+    /** Release resources and flush the header information. */
+    @Override
     public void close() throws IOException {
         super.close();
         fidWriter.close();
@@ -122,15 +119,14 @@ class IndexedShapefileFeatureWriter extends ShapefileFeatureWriter implements Fi
         try {
             fidWriter.close();
         } catch (Throwable e) {
-            ShapefileDataStoreFactory.LOGGER.log(Level.WARNING, "Error creating Feature ID index",
-                    e);
+            ShapefileDataStoreFactory.LOGGER.log(Level.WARNING, "Error creating Feature ID index", e);
         }
     }
 
     private void deleteFile(ShpFileType shpFileType) {
         URL url = shpFiles.acquireWrite(shpFileType, this);
         try {
-            File toDelete = DataUtilities.urlToFile(url);
+            File toDelete = URLs.urlToFile(url);
 
             if (toDelete.exists()) {
                 toDelete.delete();
@@ -140,6 +136,7 @@ class IndexedShapefileFeatureWriter extends ShapefileFeatureWriter implements Fi
         }
     }
 
+    @Override
     public String id() {
         return getClass().getName();
     }

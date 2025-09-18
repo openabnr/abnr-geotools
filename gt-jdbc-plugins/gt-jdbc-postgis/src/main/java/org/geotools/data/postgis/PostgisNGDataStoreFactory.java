@@ -22,67 +22,139 @@ import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.Map;
-
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.sql.DataSource;
-
+import org.geotools.api.data.Parameter;
+import org.geotools.api.data.Transaction;
 import org.geotools.jdbc.JDBCDataStore;
 import org.geotools.jdbc.JDBCDataStoreFactory;
 import org.geotools.jdbc.SQLDialect;
 import org.geotools.util.KVP;
+import org.geotools.util.logging.Logging;
+import org.postgresql.jdbc.SslMode;
 
-/**
- * 
- *
- * @source $URL$
- */
 public class PostgisNGDataStoreFactory extends JDBCDataStoreFactory {
-    
+
+    static final Logger LOGGER = Logging.getLogger(PostgisNGDataStoreFactory.class);
+
     /** parameter for database type */
-    public static final Param DBTYPE = new Param("dbtype", String.class, "Type", true, "postgis");
-    
+    public static final Param DBTYPE = new Param(
+            "dbtype", String.class, "Type", true, "postgis", Collections.singletonMap(Parameter.LEVEL, "program"));
+
     /** enables using && in bbox queries */
-    public static final Param LOOSEBBOX = new Param("Loose bbox", Boolean.class, "Perform only primary filter on bbox", false, Boolean.TRUE);
-    
-    /** parameter that enables estimated extends instead of exact ones */ 
-    public static final Param ESTIMATED_EXTENTS = new Param("Estimated extends", Boolean.class, "Use the spatial index information to quickly get an estimate of the data bounds", false, Boolean.TRUE);
-    
+    public static final Param LOOSEBBOX =
+            new Param("Loose bbox", Boolean.class, "Perform only primary filter on bbox", false, Boolean.TRUE);
+
+    /** parameter that enables estimated extends instead of exact ones */
+    public static final Param ESTIMATED_EXTENTS = new Param(
+            "Estimated extends",
+            Boolean.class,
+            "Use the spatial index information to quickly get an estimate of the data bounds",
+            false,
+            Boolean.TRUE);
+
     /** parameter for database port */
     public static final Param PORT = new Param("port", Integer.class, "Port", true, 5432);
-    
+
     /** parameter for database schema */
     public static final Param SCHEMA = new Param("schema", String.class, "Schema", false, "public");
-    
+
     /** attempt to create the database if missing */
-    public static final Param CREATE_DB_IF_MISSING = new Param("create database", Boolean.class, 
-            "Creates the database if it does not exist yet", false, false, Param.LEVEL, "advanced");
-    
+    public static final Param CREATE_DB_IF_MISSING = new Param(
+            "create database",
+            Boolean.class,
+            "Creates the database if it does not exist yet",
+            false,
+            false,
+            Param.LEVEL,
+            "advanced");
+
     /** attempt to create the database if missing */
-    public static final Param CREATE_PARAMS = new Param("create database params", String.class, 
-            "Extra specifications appeneded to the CREATE DATABASE command", false, "", Param.LEVEL, "advanced");
+    public static final Param CREATE_PARAMS = new Param(
+            "create database params",
+            String.class,
+            "Extra specifications appended to the CREATE DATABASE command",
+            false,
+            "",
+            Param.LEVEL,
+            "advanced");
+
+    /** Whether a prepared statements based dialect should be used, or not */
+    public static final Param PREPARED_STATEMENTS =
+            new Param("preparedStatements", Boolean.class, "Use prepared statements", false, Boolean.FALSE);
+
+    /** Enables direct encoding of selected filter functions in sql */
+    public static final Param ENCODE_FUNCTIONS = new Param(
+            "encode functions",
+            Boolean.class,
+            "set to true to have a set of filter functions be translated directly in SQL. "
+                    + "Due to differences in the type systems the result might not be the same as evaluating "
+                    + "them in memory, including the SQL failing with errors while the in memory version works fine. "
+                    + "However this allows to push more of the filter into the database, increasing performance."
+                    + "the postgis table.",
+            false,
+            Boolean.TRUE,
+            new KVP(Param.LEVEL, "advanced"));
 
     /**
-     * Wheter a prepared statements based dialect should be used, or not
+     * Enables usage of a simplification function, when the queries contain geometry simplification hints The
+     * simplification function used depends on SIMPLIFICATION_METHOD setting, and is ST_Simplify by default
      */
-    public static final Param PREPARED_STATEMENTS = new Param("preparedStatements", Boolean.class, "Use prepared statements", false, Boolean.FALSE);
-    
-    /**
-     * Enables direct encoding of selected filter functions in sql
-     */
-    public static final Param ENCODE_FUNCTIONS = new Param( "encode functions", Boolean.class,
-            "set to true to have a set of filter functions be translated directly in SQL. " +
-            "Due to differences in the type systems the result might not be the same as evaluating " +
-            "them in memory, including the SQL failing with errors while the in memory version works fine. " +
-            "However this allows to push more of the filter into the database, increasing performance." +
-            "the postgis table.", false, new Boolean(false),
-            new KVP( Param.LEVEL, "advanced"));
-    
-    /**
-     * Enables usage of ST_Simplify when the queries contain geometry simplification hints
-     */
-    public static final Param SIMPLIFY = new Param("Support on the fly geometry simplification", Boolean.class, 
-            "When enabled, operations such as map rendering will pass a hint that will enable the usage of ST_Simplify", false, Boolean.TRUE);
-    
+    public static final Param SIMPLIFY = new Param(
+            "Support on the fly geometry simplification",
+            Boolean.class,
+            "When enabled, operations such as map rendering will pass a hint that will enable the usage of a simplification function",
+            false,
+            Boolean.TRUE);
+    /** Simplification method to use if SIMPLIFY is true. By default ST_Simplify is used. */
+    public static final Param SIMPLIFICATION_METHOD = new Param(
+            "Method used to simplify geometries",
+            SimplificationMethod.class,
+            "Allows choosing the PostGIS simplification function to use, between ST_Simplify and ST_SimplifyPreserveTopology",
+            false,
+            SimplificationMethod.FAST,
+            new KVP(Param.OPTIONS, Arrays.asList(SimplificationMethod.values())));
+
+    public static final Param SSL_MODE = new Param(
+            "SSL mode",
+            SslMode.class,
+            "The connection SSL mode",
+            false,
+            SslMode.DISABLE,
+            new KVP(Param.OPTIONS, Arrays.asList(SslMode.values())));
+
+    public static final Param REWRITE_BATCHED_INSERTS = new Param(
+            "reWriteBatchedInserts",
+            Boolean.class,
+            "This will change batch inserts from INSERT INTO foo (col1, col2, col3) VALUES (1, 2, 3) "
+                    + "to INSERT INTO foo (col1, col2, col3) VALUES (1, 2, 3), (4, 5, 6) . "
+                    + "When setting this parameter to true, you should also set the parameter BATCH_INSERT_SIZE = 1000. "
+                    + "Enabling this parameter and setting BATCH_INSERT_SIZE too low may result in decreased insert performance.",
+            false,
+            Boolean.FALSE);
+
+    @Override
+    protected SQLDialect createSQLDialect(JDBCDataStore dataStore, Map<String, ?> params) {
+        PostGISDialect dialect = new PostGISDialect(dataStore);
+        try {
+            if (Boolean.TRUE.equals(PREPARED_STATEMENTS.lookUp(params))) {
+                return new PostGISPSDialect(dataStore, dialect);
+            }
+        } catch (IOException e) {
+            if (LOGGER.isLoggable(Level.FINE))
+                LOGGER.log(
+                        Level.FINE,
+                        "Failed to lookup prepared statement parameter, continuing with non prepared dialect",
+                        e);
+        }
+
+        return dialect;
+    }
+
     @Override
     protected SQLDialect createSQLDialect(JDBCDataStore dataStore) {
         return new PostGISDialect(dataStore);
@@ -92,114 +164,149 @@ public class PostgisNGDataStoreFactory extends JDBCDataStoreFactory {
     protected String getDatabaseID() {
         return (String) DBTYPE.sample;
     }
-    
+
     @Override
     public String getDisplayName() {
         return "PostGIS";
     }
 
+    @Override
     public String getDescription() {
         return "PostGIS Database";
     }
-    
+
     @Override
     protected String getDriverClassName() {
         return "org.postgresql.Driver";
     }
-    
+
     @Override
-    protected boolean checkDBType(Map params) {
+    protected boolean checkDBType(Map<String, ?> params) {
         if (super.checkDBType(params)) {
-          //check for old factory
+            // check for old factory
             try {
                 Class.forName("org.geotools.data.postgis.PostgisDataStoreFactory");
-                
-                //old factory is around, let it handle the connection
+
+                // old factory is around, let it handle the connection
                 return false;
-            } 
-            catch(ClassNotFoundException e) {
-                //old factory is not around, handle this connection
+            } catch (ClassNotFoundException e) {
+                // old factory is not around, handle this connection
                 return true;
             }
-        }
-        else {
-            //check for postgisng as well
+        } else {
+            // check for postgisng as well
             return checkDBType(params, "postgisng");
         }
     }
-    
-    protected JDBCDataStore createDataStoreInternal(JDBCDataStore dataStore, Map params)
-        throws IOException {
-        
+
+    @Override
+    protected JDBCDataStore createDataStoreInternal(JDBCDataStore dataStore, Map<String, ?> params) throws IOException {
+
         // setup loose bbox
-        PostGISDialect dialect = (PostGISDialect) dataStore.getSQLDialect();
+        SQLDialect genericDialect = dataStore.getSQLDialect();
+        PostGISDialect dialect;
+        if (genericDialect instanceof PostGISPSDialect) {
+            dialect = ((PostGISPSDialect) genericDialect).getDelegate();
+        } else {
+            dialect = (PostGISDialect) dataStore.getSQLDialect();
+        }
         Boolean loose = (Boolean) LOOSEBBOX.lookUp(params);
         dialect.setLooseBBOXEnabled(loose == null || Boolean.TRUE.equals(loose));
-        
+
         // check the estimated extents
         Boolean estimated = (Boolean) ESTIMATED_EXTENTS.lookUp(params);
         dialect.setEstimatedExtentsEnabled(estimated == null || Boolean.TRUE.equals(estimated));
-        
+
         // check if we can encode functions in sql
         Boolean encodeFunctions = (Boolean) ENCODE_FUNCTIONS.lookUp(params);
-        dialect.setFunctionEncodingEnabled(encodeFunctions != null && encodeFunctions);
-        
+        dialect.setFunctionEncodingEnabled(encodeFunctions == null || encodeFunctions);
+
         // setup the ps dialect if need be
         Boolean usePs = (Boolean) PREPARED_STATEMENTS.lookUp(params);
-        if(Boolean.TRUE.equals(usePs)) {
+        if (Boolean.TRUE.equals(usePs)) {
             dataStore.setSQLDialect(new PostGISPSDialect(dataStore, dialect));
         }
-        
+
         // check geometry simplification (on by default)
         Boolean simplify = (Boolean) SIMPLIFY.lookUp(params);
         dialect.setSimplifyEnabled(simplify == null || simplify);
-        
+        // check preserving topology when simplifying geometries (off by default)
+        SimplificationMethod simplificationMethod = (SimplificationMethod) SIMPLIFICATION_METHOD.lookUp(params);
+        dialect.setTopologyPreserved(SimplificationMethod.PRESERVETOPOLOGY.equals(simplificationMethod));
+
         // encode BBOX filter with wrapping ST_Envelope (GEOT-5167)
         Boolean encodeBBOXAsEnvelope = false;
         String largeGeometriesOptimized = System.getProperty("org.geotools.data.postgis.largeGeometriesOptimize");
-        if(largeGeometriesOptimized != null) {
+        if (largeGeometriesOptimized != null) {
             encodeBBOXAsEnvelope = largeGeometriesOptimized.toLowerCase().equals("true");
         }
-        dialect.setEncodeBBOXFilterAsEnvelope(encodeBBOXAsEnvelope != null
-                && Boolean.TRUE.equals(encodeBBOXAsEnvelope));
+        dialect.setEncodeBBOXFilterAsEnvelope(Boolean.TRUE.equals(encodeBBOXAsEnvelope));
 
+        Connection cx = dataStore.getConnection(Transaction.AUTO_COMMIT);
+        try {
+            // creating a new connection will internally call
+            // org.geotools.data.postgis.PostGISDialect.initializeConnection(Connection)
+            // the following line is really just to prevent empty try block PMD violation
+            LOGGER.finest("escaping backslashes: " + dialect.isEscapeBackslash());
+        } finally {
+            dataStore.closeSafe(cx);
+        }
         return dataStore;
     }
-    
+
     @Override
-    protected void setupParameters(Map parameters) {
+    protected void setupParameters(Map<String, Object> parameters) {
         // NOTE: when adding parameters here remember to add them to PostgisNGJNDIDataStoreFactory
-        
+
         super.setupParameters(parameters);
         parameters.put(DBTYPE.key, DBTYPE);
         parameters.put(SCHEMA.key, SCHEMA);
         parameters.put(LOOSEBBOX.key, LOOSEBBOX);
         parameters.put(ESTIMATED_EXTENTS.key, ESTIMATED_EXTENTS);
         parameters.put(PORT.key, PORT);
+        parameters.put(SSL_MODE.key, SSL_MODE);
         parameters.put(PREPARED_STATEMENTS.key, PREPARED_STATEMENTS);
         parameters.put(MAX_OPEN_PREPARED_STATEMENTS.key, MAX_OPEN_PREPARED_STATEMENTS);
         parameters.put(ENCODE_FUNCTIONS.key, ENCODE_FUNCTIONS);
         parameters.put(SIMPLIFY.key, SIMPLIFY);
+        parameters.put(SIMPLIFICATION_METHOD.key, SIMPLIFICATION_METHOD);
         parameters.put(CREATE_DB_IF_MISSING.key, CREATE_DB_IF_MISSING);
         parameters.put(CREATE_PARAMS.key, CREATE_PARAMS);
+        parameters.put(REWRITE_BATCHED_INSERTS.key, REWRITE_BATCHED_INSERTS);
     }
-    
+
     @Override
     protected String getValidationQuery() {
         return "select now()";
     }
-    
+
     @Override
-    protected String getJDBCUrl(Map params) throws IOException {
+    protected String getJDBCUrl(Map<String, ?> params) throws IOException {
         String host = (String) HOST.lookUp(params);
         String db = (String) DATABASE.lookUp(params);
         int port = (Integer) PORT.lookUp(params);
-        return "jdbc:postgresql" + "://" + host + ":" + port + "/" + db;
+        boolean reWriteBatchedInserts = Boolean.TRUE.equals(REWRITE_BATCHED_INSERTS.lookUp(params));
+        String url = "jdbc:postgresql"
+                + "://"
+                + host
+                + ":"
+                + port
+                + "/"
+                + db
+                + "?reWriteBatchedInserts="
+                + reWriteBatchedInserts;
+        SslMode mode = (SslMode) SSL_MODE.lookUp(params);
+        if (mode != null) {
+            url = url + "&sslmode=" + mode + "&binaryTransferEnable=bytea";
+        }
+
+        return url;
     }
-    
-    protected DataSource createDataSource(Map params, SQLDialect dialect) throws IOException {
+
+    @Override
+    protected DataSource createDataSource(Map<String, ?> params, SQLDialect dialect) throws IOException {
         DataSource ds = super.createDataSource(params, dialect);
-        JDBCDataStore closer = new JDBCDataStore();
+        JDBCDataStore store = new JDBCDataStore();
 
         if (Boolean.TRUE.equals(CREATE_DB_IF_MISSING.lookUp(params))) {
             // verify we can connect
@@ -210,7 +317,7 @@ public class PostgisNGDataStoreFactory extends JDBCDataStoreFactory {
             } catch (SQLException e) {
                 canConnect = false;
             } finally {
-                closer.closeSafe(cx);
+                store.closeSafe(cx);
             }
 
             if (!canConnect) {
@@ -236,8 +343,8 @@ public class PostgisNGDataStoreFactory extends JDBCDataStoreFactory {
                 } catch (SQLException e) {
                     throw new IOException("Failed to create the target database", e);
                 } finally {
-                    closer.closeSafe(st);
-                    closer.closeSafe(cx);
+                    store.closeSafe(st);
+                    store.closeSafe(cx);
                 }
 
                 // if we got here the database has been created, now verify it has the postgis
@@ -252,16 +359,17 @@ public class PostgisNGDataStoreFactory extends JDBCDataStoreFactory {
                     st = cx.createStatement();
                     try {
                         rs = st.executeQuery("select PostGIS_version()");
-                        rs.close();
                     } catch (SQLException e) {
                         // not available eh? create it
                         st.execute("create extension postgis");
+                    } finally {
+                        store.closeSafe(rs);
                     }
                 } catch (SQLException e) {
                     throw new IOException("Failed to create the target database", e);
                 } finally {
-                    closer.closeSafe(st);
-                    closer.closeSafe(cx);
+                    store.closeSafe(st);
+                    store.closeSafe(cx);
                 }
 
                 // and finally re-create the connection pool
@@ -274,7 +382,7 @@ public class PostgisNGDataStoreFactory extends JDBCDataStoreFactory {
 
     private Connection getConnection(String user, String password, String url) throws SQLException {
         Connection cx;
-        if(user != null) {
+        if (user != null) {
             cx = DriverManager.getConnection(url, user, password);
         } else {
             cx = DriverManager.getConnection(url);
@@ -283,13 +391,11 @@ public class PostgisNGDataStoreFactory extends JDBCDataStoreFactory {
     }
 
     /**
-     * Drops the database specified in the connection params. The database must not be in use, and
-     * the user must have the necessary privileges
-     * @param params
-     * @throws IOException
+     * Drops the database specified in the connection params. The database must not be in use, and the user must have
+     * the necessary privileges
      */
     public void dropDatabase(Map<String, Object> params) throws IOException {
-        JDBCDataStore closer = new JDBCDataStore();
+        JDBCDataStore store = new JDBCDataStore();
         // get the connection params
         String host = (String) HOST.lookUp(params);
         int port = (Integer) PORT.lookUp(params);
@@ -311,11 +417,8 @@ public class PostgisNGDataStoreFactory extends JDBCDataStoreFactory {
         } catch (SQLException e) {
             throw new IOException("Failed to drop the target database", e);
         } finally {
-            closer.closeSafe(st);
-            closer.closeSafe(cx);
+            store.closeSafe(st);
+            store.closeSafe(cx);
         }
-
     }
-
-
 }

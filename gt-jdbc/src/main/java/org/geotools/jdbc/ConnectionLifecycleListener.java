@@ -20,33 +20,22 @@ import java.sql.Connection;
 import java.sql.SQLException;
 
 /**
- * This interface can be implemented to perform custom behavior on each connection as it gets
- * borrowed from the connection pool and then released back to the pool.
- * 
+ * This interface can be implemented to perform custom behavior on each connection as it gets borrowed from the
+ * connection pool and then released back to the pool.
+ *
  * @author Andrea Aime - GeoSolutions
- * 
  */
 public interface ConnectionLifecycleListener {
 
-    /**
-     * Called when the collection is being borrowed from the connection pool
-     */
+    /** Called when the collection is being borrowed from the connection pool */
     public void onBorrow(JDBCDataStore store, Connection cx) throws SQLException;
 
-    /**
-     * Called when the collection is being released back to the connection pool
-     */
+    /** Called when the collection is being released back to the connection pool */
     public void onRelease(JDBCDataStore store, Connection cx) throws SQLException;
 
-    /**
-     * Called when the connection comes to a commit
-     * @throws SQLException 
-     */
+    /** Called when the connection comes to a commit */
     public void onCommit(JDBCDataStore store, Connection cx) throws SQLException;
-    
-    /**
-     * Called when the connection comes to a rollback
-     */
-    public void onRollback(JDBCDataStore store, Connection cx) throws SQLException;
 
+    /** Called when the connection comes to a rollback */
+    public void onRollback(JDBCDataStore store, Connection cx) throws SQLException;
 }

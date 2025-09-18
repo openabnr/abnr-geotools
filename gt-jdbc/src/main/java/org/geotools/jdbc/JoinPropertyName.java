@@ -17,22 +17,21 @@
 
 package org.geotools.jdbc;
 
+import org.geotools.api.feature.simple.SimpleFeatureType;
 import org.geotools.filter.AttributeExpressionImpl;
-import org.opengis.feature.simple.SimpleFeatureType;
 
 /**
  * Property name that knows what feature type it comes from.
- * <p>
- * Used by the sql encoder to determine how to property encode the join query. 
- * </p>
- * 
+ *
+ * <p>Used by the sql encoder to determine how to property encode the join query.
+ *
  * @author Justin Deoliveira, OpenGeo
  */
 public class JoinPropertyName extends AttributeExpressionImpl {
 
     SimpleFeatureType featureType;
     String alias;
-    
+
     public JoinPropertyName(SimpleFeatureType featureType, String alias, String name) {
         super(name);
         this.featureType = featureType;

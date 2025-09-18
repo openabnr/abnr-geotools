@@ -7,23 +7,14 @@
                                                                                 
         Version: $Id$              
      ======================================================================= -->
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 
-                               http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
-    <groupId>com.abonaro.gis.geotools.jdbc</groupId>
+    <groupId>com.abonaro.geotools.jdbc</groupId>
     <artifactId>gt-jdbc</artifactId>
-    <version>14.5.3</version>
+    <version>33.2.1</version>
   </parent>
-  
-  <properties>
-    <geotools.version>14.5</geotools.version>
-    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-  </properties>
 
   <!-- =========================================================== -->
   <!--     Module Description                                      -->
@@ -32,9 +23,7 @@
   <packaging>jar</packaging>
   <name>MySQL DataStore</name>
 
-  <description>
-	DataStore for MySQL Database.
-  </description>
+  <description>DataStore for MySQL Database.</description>
 
   <licenses>
     <license>
@@ -44,14 +33,13 @@
     </license>
   </licenses>
 
-
   <!-- =========================================================== -->
   <!--     Developers and Contributors                             -->
   <!-- =========================================================== -->
   <developers>
     <developer>
-      <name>Justin Deoliveira</name>
       <id>jdeolive</id>
+      <name>Justin Deoliveira</name>
       <email>jdeolive@users.sourceforge.net</email>
       <organization>TOPP</organization>
       <roles>
@@ -61,10 +49,16 @@
     </developer>
   </developers>
 
+  <properties>
+    <geotools.version>33.2</geotools.version>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+  </properties>
+
   <dependencies>
     <dependency>
-      <groupId>mysql</groupId>
-      <artifactId>mysql-connector-java</artifactId>
+      <groupId>com.mysql</groupId>
+      <artifactId>mysql-connector-j</artifactId>
     </dependency>
   </dependencies>
 

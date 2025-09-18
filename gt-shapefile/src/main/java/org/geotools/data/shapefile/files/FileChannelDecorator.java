@@ -25,20 +25,13 @@ import java.nio.channels.FileLock;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritableByteChannel;
 
-
 /**
- * A FileChannel that delegates all calls to the underlying FileChannel but for
- * {@link #implCloseChannel()} it also calls ShapefileFiles.unlock method to
- * release the lock on the URL.
- * 
+ * A FileChannel that delegates all calls to the underlying FileChannel but for {@link #implCloseChannel()} it also
+ * calls ShapefileFiles.unlock method to release the lock on the URL.
+ *
  * @author jesse
- *
- *
- *
- * @source $URL$
  */
-public class FileChannelDecorator extends FileChannel implements
-        ReadableByteChannel {
+public class FileChannelDecorator extends FileChannel implements ReadableByteChannel {
 
     private final FileChannel wrapped;
     private final ShpFiles shapefileFiles;
@@ -47,8 +40,7 @@ public class FileChannelDecorator extends FileChannel implements
     private final FileWriter writer;
     private boolean closed;
 
-    public FileChannelDecorator(FileChannel channel, ShpFiles shapefileFiles,
-            URL url, FileReader requestor) {
+    public FileChannelDecorator(FileChannel channel, ShpFiles shapefileFiles, URL url, FileReader requestor) {
         this.wrapped = channel;
         this.shapefileFiles = shapefileFiles;
         this.url = url;
@@ -57,8 +49,7 @@ public class FileChannelDecorator extends FileChannel implements
         this.closed = false;
     }
 
-    public FileChannelDecorator(FileChannel channel, ShpFiles shapefileFiles,
-            URL url, FileWriter requestor) {
+    public FileChannelDecorator(FileChannel channel, ShpFiles shapefileFiles, URL url, FileWriter requestor) {
         this.wrapped = channel;
         this.shapefileFiles = shapefileFiles;
         this.url = url;
@@ -66,75 +57,84 @@ public class FileChannelDecorator extends FileChannel implements
         reader = null;
     }
 
+    @Override
     public void force(boolean metaData) throws IOException {
         wrapped.force(metaData);
     }
 
-    public FileLock lock(long position, long size, boolean shared)
-            throws IOException {
+    @Override
+    public FileLock lock(long position, long size, boolean shared) throws IOException {
         return wrapped.lock(position, size, shared);
     }
 
-    public MappedByteBuffer map(MapMode mode, long position, long size)
-            throws IOException {
-//    	return wrapped.map(mode, position, size)
-    	 return shapefileFiles.map(wrapped, url, mode, position, size);
+    @Override
+    public MappedByteBuffer map(MapMode mode, long position, long size) throws IOException {
+        //    	return wrapped.map(mode, position, size)
+        return shapefileFiles.map(wrapped, url, mode, position, size);
     }
 
+    @Override
     public long position() throws IOException {
         return wrapped.position();
     }
 
+    @Override
     public FileChannel position(long newPosition) throws IOException {
         return wrapped.position(newPosition);
     }
 
+    @Override
     public int read(ByteBuffer dst, long position) throws IOException {
         return wrapped.read(dst, position);
     }
 
+    @Override
     public int read(ByteBuffer dst) throws IOException {
         return wrapped.read(dst);
     }
 
-    public long read(ByteBuffer[] dsts, int offset, int length)
-            throws IOException {
+    @Override
+    public long read(ByteBuffer[] dsts, int offset, int length) throws IOException {
         return wrapped.read(dsts, offset, length);
     }
 
+    @Override
     public long size() throws IOException {
         return wrapped.size();
     }
 
-    public long transferFrom(ReadableByteChannel src, long position, long count)
-            throws IOException {
+    @Override
+    public long transferFrom(ReadableByteChannel src, long position, long count) throws IOException {
         return wrapped.transferFrom(src, position, count);
     }
 
-    public long transferTo(long position, long count, WritableByteChannel target)
-            throws IOException {
+    @Override
+    public long transferTo(long position, long count, WritableByteChannel target) throws IOException {
         return wrapped.transferTo(position, count, target);
     }
 
+    @Override
     public FileChannel truncate(long size) throws IOException {
         return wrapped.truncate(size);
     }
 
-    public FileLock tryLock(long position, long size, boolean shared)
-            throws IOException {
+    @Override
+    public FileLock tryLock(long position, long size, boolean shared) throws IOException {
         return wrapped.tryLock(position, size, shared);
     }
 
+    @Override
     public int write(ByteBuffer src, long position) throws IOException {
         return wrapped.write(src, position);
     }
 
+    @Override
     public int write(ByteBuffer src) throws IOException {
         return wrapped.write(src);
     }
 
-    public long write(ByteBuffer[] srcs, int offset, int length)
-            throws IOException {
+    @Override
+    public long write(ByteBuffer[] srcs, int offset, int length) throws IOException {
         return wrapped.write(srcs, offset, length);
     }
 
@@ -152,9 +152,5 @@ public class FileChannelDecorator extends FileChannel implements
                 }
             }
         }
-
     }
-    
-    
-
 }

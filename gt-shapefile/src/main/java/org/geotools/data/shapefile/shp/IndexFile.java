@@ -17,37 +17,30 @@
 package org.geotools.data.shapefile.shp;
 
 import java.io.IOException;
-import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.IntBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
 import java.util.logging.Logger;
-
 import org.geotools.data.shapefile.files.FileReader;
 import org.geotools.data.shapefile.files.ShpFileType;
 import org.geotools.data.shapefile.files.ShpFiles;
 import org.geotools.data.shapefile.files.StreamLogging;
-import org.geotools.resources.NIOUtilities;
+import org.geotools.util.NIOUtilities;
 
 /**
  * IndexFile parser for .shx files.<br>
- * For now, the creation of index files is done in the ShapefileWriter. But this
- * can be used to access the index.<br>
+ * For now, the creation of index files is done in the ShapefileWriter. But this can be used to access the index.<br>
  * For details on the index file, see <br>
- * <a href="http://www.esri.com/library/whitepapers/pdfs/shapefile.pdf"><b>"ESRI(r)
- * Shapefile - A Technical Description"</b><br> * <i>'An ESRI White Paper .
- * May 1997'</i></a>
- * 
+ * <a href="http://www.esri.com/library/whitepapers/pdfs/shapefile.pdf"><b>"ESRI(r) Shapefile - A Technical
+ * Description"</b><br>
+ * * <i>'An ESRI White Paper . May 1997'</i></a>
+ *
  * @author Ian Schneider
- *
- *
- * @source $URL$
  */
-public class IndexFile implements FileReader {
-    private static final Logger LOGGER = org.geotools.util.logging.Logging
-            .getLogger("org.geotools.data.shapefile");
+public class IndexFile implements FileReader, AutoCloseable {
+    private static final Logger LOGGER = org.geotools.util.logging.Logging.getLogger(IndexFile.class);
 
     private static final int RECS_IN_BUFFER = 2000;
 
@@ -66,26 +59,21 @@ public class IndexFile implements FileReader {
 
     /**
      * Load the index file from the given channel.
-     * 
-     * @param shpFiles
-     *                The channel to read from.
-     * @throws IOException
-     *                 If an error occurs.
+     *
+     * @param shpFiles The channel to read from.
+     * @throws IOException If an error occurs.
      */
-    public IndexFile(ShpFiles shpFiles, boolean useMemoryMappedBuffer)
-            throws IOException {
+    @SuppressWarnings("PMD.CloseResource") // file channel managed as a resource
+    public IndexFile(ShpFiles shpFiles, boolean useMemoryMappedBuffer) throws IOException {
         this.useMemoryMappedBuffer = useMemoryMappedBuffer;
         streamLogger.open();
-        ReadableByteChannel byteChannel = shpFiles.getReadChannel(
-                ShpFileType.SHX, this);
+        ReadableByteChannel byteChannel = shpFiles.getReadChannel(ShpFileType.SHX, this);
         try {
             if (byteChannel instanceof FileChannel) {
-
                 this.channel = (FileChannel) byteChannel;
                 if (useMemoryMappedBuffer) {
                     LOGGER.finest("Memory mapping file...");
-                    this.buf = this.channel.map(FileChannel.MapMode.READ_ONLY,
-                            0, this.channel.size());
+                    this.buf = this.channel.map(FileChannel.MapMode.READ_ONLY, 0, this.channel.size());
 
                     this.channelOffset = 0;
                 } else {
@@ -95,7 +83,7 @@ public class IndexFile implements FileReader {
                     buf.flip();
                     this.channelOffset = 0;
                 }
-                
+
                 header = new ShapefileHeader();
                 header.read(buf, true);
             } else {
@@ -108,14 +96,13 @@ public class IndexFile implements FileReader {
             if (byteChannel != null) {
                 byteChannel.close();
             }
-            throw (IOException) new IOException(e.getLocalizedMessage())
-                    .initCause(e);
+            throw (IOException) new IOException(e.getLocalizedMessage()).initCause(e);
         }
     }
 
     /**
      * Get the header of this index file.
-     * 
+     *
      * @return The header of the index file.
      */
     public ShapefileHeader getHeader() {
@@ -126,7 +113,6 @@ public class IndexFile implements FileReader {
         if (closed) {
             throw new IllegalStateException("Index file has been closed");
         }
-
     }
 
     private void readHeader(ReadableByteChannel channel) throws IOException {
@@ -166,15 +152,13 @@ public class IndexFile implements FileReader {
         check();
         int pos = 100 + index * 8;
         if (!this.useMemoryMappedBuffer) {
-            if (pos - this.channelOffset < 0
-                    || this.channelOffset + buf.limit() <= pos
-                    || this.lastIndex == -1) {
+            if (pos - this.channelOffset < 0 || this.channelOffset + buf.limit() <= pos || this.lastIndex == -1) {
                 LOGGER.finest("Filling buffer...");
                 this.channelOffset = pos;
                 this.channel.position(pos);
-                ((Buffer) buf).clear();
+                buf.clear();
                 this.channel.read(buf);
-                ((Buffer) buf).flip();
+                buf.flip();
             }
         }
 
@@ -184,6 +168,7 @@ public class IndexFile implements FileReader {
         this.lastIndex = index;
     }
 
+    @Override
     public void close() throws IOException {
         closed = true;
         if (channel != null && channel.isOpen()) {
@@ -197,9 +182,9 @@ public class IndexFile implements FileReader {
         this.channel = null;
     }
 
-    /**
-     * @see java.lang.Object#finalize()
-     */
+    /** @see java.lang.Object#finalize() */
+    @Override
+    @SuppressWarnings("deprecation") // finalize is deprecated in Java 9
     protected void finalize() throws Throwable {
         this.close();
         super.finalize();
@@ -207,7 +192,7 @@ public class IndexFile implements FileReader {
 
     /**
      * Get the number of records in this index.
-     * 
+     *
      * @return The number of records.
      */
     public int getRecordCount() {
@@ -216,11 +201,9 @@ public class IndexFile implements FileReader {
 
     /**
      * Get the offset of the record (in 16-bit words).
-     * 
-     * @param index
-     *                The index, from 0 to getRecordCount - 1
+     *
+     * @param index The index, from 0 to getRecordCount - 1
      * @return The offset in 16-bit words.
-     * @throws IOException
      */
     public int getOffset(int index) throws IOException {
         int ret = -1;
@@ -240,11 +223,9 @@ public class IndexFile implements FileReader {
 
     /**
      * Get the offset of the record (in real bytes, not 16-bit words).
-     * 
-     * @param index
-     *                The index, from 0 to getRecordCount - 1
+     *
+     * @param index The index, from 0 to getRecordCount - 1
      * @return The offset in bytes.
-     * @throws IOException
      */
     public int getOffsetInBytes(int index) throws IOException {
         return this.getOffset(index) * 2;
@@ -252,11 +233,9 @@ public class IndexFile implements FileReader {
 
     /**
      * Get the content length of the given record in bytes, not 16 bit words.
-     * 
-     * @param index
-     *                The index, from 0 to getRecordCount - 1
+     *
+     * @param index The index, from 0 to getRecordCount - 1
      * @return The lengh in bytes of the record.
-     * @throws IOException
      */
     public int getContentLength(int index) throws IOException {
         int ret = -1;
@@ -274,8 +253,8 @@ public class IndexFile implements FileReader {
         return ret;
     }
 
+    @Override
     public String id() {
         return getClass().getName();
     }
-
 }

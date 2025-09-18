@@ -18,12 +18,24 @@ package org.geotools.geopkg.geom;
 
 /**
  * EnvelopeType specified in the header of a Geometry (see Geopackage specs)
- * 
+ *
  * @author Justin Deoliveira
  * @author Niels Charlier
  */
 public enum EnvelopeType {
-    NONE(0, 0), XY(1, 32), XYZ(2, 48), XYM(3, 48), XYZM(4, 64);
+    NONE(0, 0),
+    XY(1, 32),
+    XYZ(2, 48),
+    XYM(3, 48),
+    XYZM(4, 64);
+
+    // the call to "values" returns every single time a new array, because arrays cannt be
+    // constant in Java. We need just one to perform the lookups in EnvelopeType#valueOf,
+    // and we need to ensure its contents are not going to be modified. May seems excessive,
+    // but these arrays keep on getting allocated for every single geometry read and written
+    // by the geopackage, in profiles they are third in allocation after the byte[] of the WKB
+    // and the double[] of coordinate sequences
+    private static final EnvelopeType[] VALUES = values();
 
     private byte value;
     private byte length;
@@ -34,7 +46,7 @@ public enum EnvelopeType {
     }
 
     public static EnvelopeType valueOf(byte b) {
-        for (EnvelopeType et : values()) {
+        for (EnvelopeType et : VALUES) {
             if (et.value == b) return et;
         }
         return null;

@@ -22,223 +22,287 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-
+import org.geotools.api.feature.simple.SimpleFeature;
+import org.geotools.api.feature.simple.SimpleFeatureType;
+import org.geotools.api.feature.type.AttributeDescriptor;
+import org.geotools.api.feature.type.GeometryDescriptor;
+import org.geotools.api.referencing.crs.CoordinateReferenceSystem;
 import org.geotools.feature.simple.SimpleFeatureTypeBuilder;
 import org.geotools.geojson.DelegatingHandler;
 import org.geotools.geojson.IContentHandler;
 import org.json.simple.parser.ParseException;
-import org.opengis.feature.simple.SimpleFeature;
-import org.opengis.feature.simple.SimpleFeatureType;
-import org.opengis.feature.type.AttributeDescriptor;
-import org.opengis.feature.type.GeometryDescriptor;
-import org.opengis.referencing.crs.CoordinateReferenceSystem;
 
 /**
- * Obtains a complete feature type from GeoJSON by parsing beyond first feature
- * and finding attributes that did not appear in the first feature or had null
- * values.
- * 
- * If null values are encoded, parsing will stop when all data types are found.
- * In the worst case, all features will be parsed. If null values are not
- * encoded, all features will be parsed anyway.
- * 
+ * Obtains a complete feature type from GeoJSON by parsing beyond first feature and finding attributes that did not
+ * appear in the first feature or had null values.
+ *
+ * <p>If null values are encoded, parsing will stop when all data types are found. In the worst case, all features will
+ * be parsed. If null values are not encoded, all features will be parsed anyway.
  */
 public class FeatureTypeHandler extends DelegatingHandler<SimpleFeatureType>
-    implements IContentHandler<SimpleFeatureType> {
+        implements IContentHandler<SimpleFeatureType> {
 
-  SimpleFeatureType featureType;
+    SimpleFeatureType featureType;
 
-  private boolean inFeatures = false;
+    private boolean inFeatures = false;
 
-  private Map<String, Class<?>> propertyTypes = new LinkedHashMap<String, Class<?>>();
+    private Map<String, Class<?>> propertyTypes = new LinkedHashMap<>();
 
-  private boolean inProperties;
+    private boolean inProperties;
 
-  private String currentProp;
+    private int complexNestingLevel; // level inside a complex property
 
-  private CoordinateReferenceSystem crs;
+    private String currentProp;
 
-  private boolean nullValuesEncoded;
+    private CoordinateReferenceSystem crs;
 
-  private GeometryDescriptor geom;
+    private boolean nullValuesEncoded;
 
-  public FeatureTypeHandler(boolean nullValuesEncoded) {
-    this.nullValuesEncoded = nullValuesEncoded;
-  }
+    private GeometryDescriptor geom;
 
-  @Override
-  public boolean startObjectEntry(String key) throws ParseException,
-      IOException {
-    if ("crs".equals(key)) {
-      delegate = new CRSHandler();
-      return true;
+    public FeatureTypeHandler(boolean nullValuesEncoded) {
+        this.nullValuesEncoded = nullValuesEncoded;
     }
-    if ("features".equals(key)) {
-      delegate = UNINITIALIZED;
-      inFeatures = true;
-      return true;
+
+    @Override
+    public boolean startObjectEntry(String key) throws ParseException, IOException {
+        if (complexNestingLevel > 0) {
+            return true;
+        }
+        if ("crs".equals(key)) {
+            delegate = new CRSHandler();
+            return true;
+        }
+        if ("features".equals(key)) {
+            delegate = UNINITIALIZED;
+            inFeatures = true;
+            return true;
+        }
+        if (inFeatures && delegate == NULL) {
+            if ("properties".equals(key)) {
+                inProperties = true;
+                return true;
+            }
+            if (inProperties) {
+                if (!propertyTypes.containsKey(key)) {
+                    // found previously unknown property
+                    propertyTypes.put(key, Object.class);
+                }
+                currentProp = key;
+                return true;
+            }
+        }
+        return super.startObjectEntry(key);
     }
-    if (inFeatures && delegate == NULL) {
-      if ("properties".equals(key)) {
-        inProperties = true;
+
+    @Override
+    public boolean startArray() throws ParseException, IOException {
+
+        /*
+         * Use FeatureHandler for the first feature only, to initialize the property
+         * list and obtain the geometry attribute descriptor
+         */
+        if (delegate == UNINITIALIZED) {
+            delegate = new FeatureHandler(null, new DefaultAttributeIO());
+            return true;
+        }
+
+        if (inProperties && currentProp != null) {
+            if (complexNestingLevel++ == 0) {
+                // Record property type
+                if (!propertyTypes.containsKey(currentProp)) {
+                    // found previously unknown property
+                    propertyTypes.put(currentProp, List.class);
+                } else {
+                    checkValueCompatibility(List.class);
+                }
+            }
+            return true;
+        }
+
+        return super.startArray();
+    }
+
+    @Override
+    public boolean endArray() throws ParseException, IOException {
+        super.endArray();
+
+        if (inProperties) {
+            --complexNestingLevel;
+        }
         return true;
-      }
-      if (inProperties) {
-        if (!propertyTypes.containsKey(key)) {
-          // found previously unknown property
-          propertyTypes.put(key, Object.class);
+    }
+
+    @Override
+    public boolean startObject() throws ParseException, IOException {
+        super.startObject();
+        if (inProperties && currentProp != null) {
+            if (complexNestingLevel++ == 0) {
+                // Record property type
+                if (!propertyTypes.containsKey(currentProp)) {
+                    // found previously unknown property
+                    propertyTypes.put(currentProp, Map.class);
+                } else {
+                    checkValueCompatibility(Map.class);
+                }
+            }
         }
-        currentProp = key;
         return true;
-      }
-    }
-    return super.startObjectEntry(key);
-  }
-
-  @Override
-  public boolean startArray() throws ParseException, IOException {
-
-    /*
-     * Use FeatureHandler for the first feature only, to initialize the property
-     * list and obtain the geometry attribute descriptor
-     */
-    if (delegate == UNINITIALIZED) {
-      delegate = new FeatureHandler(null, new DefaultAttributeIO());
-      return true;
     }
 
-    return super.startArray();
-  }
+    @Override
+    public boolean endObject() throws ParseException, IOException {
+        super.endObject();
 
-  @Override
-  public boolean endObject() throws ParseException, IOException {
-    super.endObject();
-
-    if (delegate instanceof FeatureHandler) {
-      // obtain a type from the first feature
-      SimpleFeature feature = ((FeatureHandler) delegate).getValue();
-      if (feature != null) {
-        geom = feature.getFeatureType().getGeometryDescriptor();
-        List<AttributeDescriptor> attributeDescriptors = feature
-            .getFeatureType().getAttributeDescriptors();
-        for (AttributeDescriptor ad : attributeDescriptors) {
-          if (!ad.equals(geom)) {
-            propertyTypes.put(ad.getLocalName(), ad.getType().getBinding());
-          }
+        if (inProperties && currentProp != null) {
+            --complexNestingLevel;
         }
-        delegate = NULL;
-
-        if (foundAllValues()) {
-          buildType();
-          return false;
+        if (complexNestingLevel > 0) {
+            return true;
         }
-      }
+
+        if (delegate instanceof FeatureHandler) {
+            // obtain a type from the first feature
+            SimpleFeature feature = ((FeatureHandler) delegate).getValue();
+            if (feature != null) {
+                geom = feature.getFeatureType().getGeometryDescriptor();
+                List<AttributeDescriptor> attributeDescriptors =
+                        feature.getFeatureType().getAttributeDescriptors();
+                for (AttributeDescriptor ad : attributeDescriptors) {
+                    if (!ad.equals(geom)) {
+                        propertyTypes.put(ad.getLocalName(), ad.getType().getBinding());
+                    }
+                }
+                delegate = NULL;
+
+                if (foundAllValues()) {
+                    buildType();
+                    return false;
+                }
+            }
+        }
+
+        return true;
     }
 
-    return true;
-  }
+    @Override
+    public boolean primitive(Object value) throws ParseException, IOException {
 
-  @Override
-  public boolean primitive(Object value) throws ParseException, IOException {
+        if (inProperties && complexNestingLevel == 0 && currentProp != null) {
+            if (!checkValueCompatibility(value)) {
+                return false;
+            }
+        }
 
-    if (value != null) {
-      Class<?> newType = value.getClass();
-      if (currentProp != null) {
+        return super.primitive(value);
+    }
+
+    private boolean checkValueCompatibility(Object value) {
+        if (value != null) {
+            return checkValueCompatibility(value.getClass());
+        }
+        return true;
+    }
+
+    private boolean checkValueCompatibility(Class<?> newType) {
         Class<?> knownType = propertyTypes.get(currentProp);
         if (knownType == Object.class) {
-          propertyTypes.put(currentProp, newType);
+            propertyTypes.put(currentProp, newType);
 
-          if (foundAllValues()) {
-            // found the last unknown type, stop parsing
-            buildType();
-            return false;
-          }
+            if (foundAllValues()) {
+                // found the last unknown type, stop parsing
+                buildType();
+                return false;
+            }
         } else if (knownType != newType) {
-          if (Number.class.isAssignableFrom(knownType) && newType == Double.class) {
-            propertyTypes.put(currentProp, Double.class);
-          } else {
-            throw new IllegalStateException("Found conflicting types " + knownType.getSimpleName() + " and "
-                + newType.getSimpleName() + " for property " + currentProp);
-          }
+            if (Number.class.isAssignableFrom(knownType) && newType == Double.class
+                    || (Number.class.isAssignableFrom(newType) && knownType == Double.class)) {
+                propertyTypes.put(currentProp, Double.class);
+            } else {
+                throw new IllegalStateException("Found conflicting types "
+                        + knownType.getSimpleName()
+                        + " and "
+                        + newType.getSimpleName()
+                        + " for property "
+                        + currentProp);
+            }
         }
-      }
-    }
-
-    return super.primitive(value);
-  }
-
-  /*
-   * When null values are encoded there's the possibility of stopping the
-   * parsing earlier, i.e.: as soon as all data types and the crs are found.
-   */
-  private boolean foundAllValues() {
-    return nullValuesEncoded && geom != null && crs != null
-        && !thereAreUnknownDataTypes();
-  }
-
-  private boolean thereAreUnknownDataTypes() {
-
-    for (Class<?> clazz : propertyTypes.values()) {
-      if (clazz == Object.class) {
         return true;
-      }
-    }
-    return false;
-  }
-
-  @Override
-  public boolean endObjectEntry() throws ParseException, IOException {
-
-    super.endObjectEntry();
-
-    if (delegate != null && delegate instanceof CRSHandler) {
-      crs = ((CRSHandler) delegate).getValue();
-      if (crs != null) {
-        delegate = NULL;
-      }
-    } else if (currentProp != null) {
-      currentProp = null;
-    } else if (inProperties) {
-      inProperties = false;
-    }
-    return true;
-  }
-
-  @Override
-  public void endJSON() throws ParseException, IOException {
-    buildType();
-  }
-
-  private void buildType() {
-
-    SimpleFeatureTypeBuilder typeBuilder = new SimpleFeatureTypeBuilder();
-    typeBuilder.setName("feature");
-    typeBuilder.setNamespaceURI("http://geotools.org");
-
-    if (geom != null) {
-      typeBuilder.add(geom.getLocalName(), geom.getType().getBinding(), crs);
     }
 
-    if (propertyTypes != null) {
-      Set<Entry<String, Class<?>>> entrySet = propertyTypes.entrySet();
-      for (Entry<String, Class<?>> entry : entrySet) {
-        Class<?> binding = entry.getValue();
-        if (binding.equals(Object.class)) {
-          binding = String.class;
+    /*
+     * When null values are encoded there's the possibility of stopping the
+     * parsing earlier, i.e.: as soon as all data types and the crs are found.
+     */
+    private boolean foundAllValues() {
+        return nullValuesEncoded && geom != null && crs != null && !thereAreUnknownDataTypes();
+    }
+
+    private boolean thereAreUnknownDataTypes() {
+
+        for (Class<?> clazz : propertyTypes.values()) {
+            if (clazz == Object.class) {
+                return true;
+            }
         }
-        typeBuilder.add(entry.getKey(), binding);
-      }
+        return false;
     }
 
-    if (crs != null) {
-      typeBuilder.setCRS(crs);
+    @Override
+    public boolean endObjectEntry() throws ParseException, IOException {
+
+        super.endObjectEntry();
+        if (complexNestingLevel > 0) {
+            // Still inside complex property
+            return true;
+        }
+
+        if (delegate != null && delegate instanceof CRSHandler) {
+            crs = ((CRSHandler) delegate).getValue();
+            if (crs != null) {
+                delegate = NULL;
+            }
+        } else if (currentProp != null) {
+            currentProp = null;
+        }
+        return true;
     }
 
-    featureType = typeBuilder.buildFeatureType();
-  }
+    @Override
+    public void endJSON() throws ParseException, IOException {
+        buildType();
+    }
 
-  @Override
-  public SimpleFeatureType getValue() {
-    return featureType;
-  }
+    private void buildType() {
+
+        SimpleFeatureTypeBuilder typeBuilder = new SimpleFeatureTypeBuilder();
+        typeBuilder.setName("feature");
+        typeBuilder.setNamespaceURI("http://geotools.org");
+
+        if (geom != null) {
+            typeBuilder.add(geom.getLocalName(), geom.getType().getBinding(), crs);
+        }
+
+        if (propertyTypes != null) {
+            Set<Entry<String, Class<?>>> entrySet = propertyTypes.entrySet();
+            for (Entry<String, Class<?>> entry : entrySet) {
+                Class<?> binding = entry.getValue();
+                if (binding.equals(Object.class)) {
+                    binding = String.class;
+                }
+                typeBuilder.add(entry.getKey(), binding);
+            }
+        }
+
+        if (crs != null) {
+            typeBuilder.setCRS(crs);
+        }
+
+        featureType = typeBuilder.buildFeatureType();
+    }
+
+    @Override
+    public SimpleFeatureType getValue() {
+        return featureType;
+    }
 }

@@ -18,23 +18,21 @@ package org.geotools.geojson;
 
 import java.io.IOException;
 import java.util.LinkedList;
-
 import org.json.simple.parser.ContentHandler;
 import org.json.simple.parser.ParseException;
 
 /**
  * Handler that records sequence of calls to be replayed layer.
- * 
- * @author Justin Deoliveira, OpenGeo
  *
+ * @author Justin Deoliveira, OpenGeo
  */
 public class RecordingHandler implements ContentHandler {
 
-    LinkedList<Action<?>> actions = new LinkedList<Action<?>>();
+    LinkedList<Action<?>> actions = new LinkedList<>();
 
     @Override
     public void startJSON() throws ParseException, IOException {
-        actions.add(new Action<Object>() {
+        actions.add(new Action<>() {
             @Override
             protected void run(ContentHandler handler) throws ParseException, IOException {
                 handler.startJSON();
@@ -44,17 +42,17 @@ public class RecordingHandler implements ContentHandler {
 
     @Override
     public boolean startObject() throws ParseException, IOException {
-        return actions.add(new Action<Object>() {
+        return actions.add(new Action<>() {
             @Override
             protected void run(ContentHandler handler) throws ParseException, IOException {
                 handler.startObject();
             }
         });
     }
-    
+
     @Override
     public boolean startObjectEntry(String key) throws ParseException, IOException {
-        return actions.add(new Action<String>(key) {
+        return actions.add(new Action<>(key) {
             @Override
             protected void run(ContentHandler handler) throws ParseException, IOException {
                 handler.startObjectEntry(obj);
@@ -64,7 +62,7 @@ public class RecordingHandler implements ContentHandler {
 
     @Override
     public boolean startArray() throws ParseException, IOException {
-        return actions.add(new Action<Object>() {
+        return actions.add(new Action<>() {
             @Override
             protected void run(ContentHandler handler) throws ParseException, IOException {
                 handler.startArray();
@@ -74,7 +72,7 @@ public class RecordingHandler implements ContentHandler {
 
     @Override
     public boolean primitive(Object obj) throws ParseException, IOException {
-        return actions.add(new Action<Object>(obj) {
+        return actions.add(new Action<>(obj) {
             @Override
             protected void run(ContentHandler handler) throws ParseException, IOException {
                 handler.primitive(obj);
@@ -84,7 +82,7 @@ public class RecordingHandler implements ContentHandler {
 
     @Override
     public boolean endArray() throws ParseException, IOException {
-        return actions.add(new Action<Object>() {
+        return actions.add(new Action<>() {
             @Override
             protected void run(ContentHandler handler) throws ParseException, IOException {
                 handler.endArray();
@@ -94,7 +92,7 @@ public class RecordingHandler implements ContentHandler {
 
     @Override
     public boolean endObjectEntry() throws ParseException, IOException {
-        return actions.add(new Action<Object>() {
+        return actions.add(new Action<>() {
             @Override
             protected void run(ContentHandler handler) throws ParseException, IOException {
                 handler.endObjectEntry();
@@ -104,7 +102,7 @@ public class RecordingHandler implements ContentHandler {
 
     @Override
     public boolean endObject() throws ParseException, IOException {
-        return actions.add(new Action<Object>() {
+        return actions.add(new Action<>() {
             @Override
             protected void run(ContentHandler handler) throws ParseException, IOException {
                 handler.endObject();
@@ -114,7 +112,7 @@ public class RecordingHandler implements ContentHandler {
 
     @Override
     public void endJSON() throws ParseException, IOException {
-        actions.add(new Action<Object>() {
+        actions.add(new Action<>() {
             @Override
             protected void run(ContentHandler handler) throws ParseException, IOException {
                 handler.endJSON();
@@ -122,8 +120,8 @@ public class RecordingHandler implements ContentHandler {
         });
     }
 
-    public void replay(ContentHandler handler) throws ParseException, IOException{
-        while(!actions.isEmpty()) {
+    public void replay(ContentHandler handler) throws ParseException, IOException {
+        while (!actions.isEmpty()) {
             actions.removeFirst().run(handler);
         }
     }

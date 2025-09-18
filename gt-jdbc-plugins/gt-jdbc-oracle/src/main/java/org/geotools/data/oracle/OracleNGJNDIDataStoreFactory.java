@@ -17,32 +17,29 @@
 package org.geotools.data.oracle;
 
 import java.util.Map;
-
 import org.geotools.jdbc.JDBCJNDIDataStoreFactory;
 
 /**
  * JNDI DataStoreFactory for oracle database.
- * 
+ *
  * @author Christian Mueller
- * 
- *
- *
- *
- * @source $URL$
  */
 public class OracleNGJNDIDataStoreFactory extends JDBCJNDIDataStoreFactory {
 
     public OracleNGJNDIDataStoreFactory() {
         super(new OracleNGDataStoreFactory());
     }
-    
+
     @Override
+    @SuppressWarnings("unchecked") // temporary workaround
     protected void setupParameters(Map parameters) {
         super.setupParameters(parameters);
-        
+
         parameters.put(OracleNGDataStoreFactory.LOOSEBBOX.key, OracleNGDataStoreFactory.LOOSEBBOX);
         parameters.put(OracleNGDataStoreFactory.ESTIMATED_EXTENTS.key, OracleNGDataStoreFactory.ESTIMATED_EXTENTS);
-        parameters.put(OracleNGDataStoreFactory.GEOMETRY_METADATA_TABLE.key, OracleNGDataStoreFactory.GEOMETRY_METADATA_TABLE);
+        parameters.put(
+                OracleNGDataStoreFactory.GEOMETRY_METADATA_TABLE.key, OracleNGDataStoreFactory.GEOMETRY_METADATA_TABLE);
         parameters.put(OracleNGDataStoreFactory.METADATA_BBOX.key, OracleNGDataStoreFactory.METADATA_BBOX);
+        parameters.put(OracleNGDataStoreFactory.GET_REMARKS.key, OracleNGDataStoreFactory.GET_REMARKS);
     }
 }

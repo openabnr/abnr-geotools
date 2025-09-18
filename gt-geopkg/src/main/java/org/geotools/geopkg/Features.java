@@ -18,17 +18,16 @@ package org.geotools.geopkg;
 
 import java.io.IOException;
 import java.util.NoSuchElementException;
-
-import org.geotools.data.FeatureReader;
-import org.geotools.data.FeatureWriter;
-import org.geotools.data.simple.SimpleFeatureReader;
-import org.geotools.data.simple.SimpleFeatureWriter;
-import org.opengis.feature.simple.SimpleFeature;
-import org.opengis.feature.simple.SimpleFeatureType;
+import org.geotools.api.data.FeatureReader;
+import org.geotools.api.data.FeatureWriter;
+import org.geotools.api.data.SimpleFeatureReader;
+import org.geotools.api.data.SimpleFeatureWriter;
+import org.geotools.api.feature.simple.SimpleFeature;
+import org.geotools.api.feature.simple.SimpleFeatureType;
 
 /**
  * Feature utility class.
- * 
+ *
  * @author Justin Deoliveira, OpenGeo
  */
 public class Features {
@@ -54,8 +53,7 @@ public class Features {
             }
 
             @Override
-            public SimpleFeature next() throws IOException, IllegalArgumentException,
-                    NoSuchElementException {
+            public SimpleFeature next() throws IOException, IllegalArgumentException, NoSuchElementException {
                 return (SimpleFeature) r.next();
             }
         };
@@ -77,7 +75,7 @@ public class Features {
             public SimpleFeature next() throws IOException {
                 return (SimpleFeature) w.next();
             }
-            
+
             @Override
             public boolean hasNext() throws IOException {
                 return w.hasNext();
@@ -92,7 +90,7 @@ public class Features {
             public void remove() throws IOException {
                 w.remove();
             }
-            
+
             @Override
             public void close() throws IOException {
                 w.close();

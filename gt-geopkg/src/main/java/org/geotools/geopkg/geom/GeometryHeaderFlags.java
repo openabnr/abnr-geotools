@@ -16,48 +16,48 @@
  */
 package org.geotools.geopkg.geom;
 
-import com.vividsolutions.jts.io.ByteOrderValues;
+import org.locationtech.jts.io.ByteOrderValues;
 
 /**
  * The Geopackage Geometry BLOB Header Flags (see Geopackage specs).
- * 
+ *
  * @author Justin Deoliveira
  * @author Niels Charlier
  */
 public class GeometryHeaderFlags {
-    
+
     /**
      * GeoPackage Binary Type inside Geometry Header Flags.
-     * 
-     * @author Niels Charlier
      *
+     * @author Niels Charlier
      */
     public enum GeopackageBinaryType {
-        StandardGeoPackageBinary(0), ExtendedGeoPackageBinary(1);
+        StandardGeoPackageBinary(0),
+        ExtendedGeoPackageBinary(1);
         private byte value;
-        
+
         private GeopackageBinaryType(int value) {
             this.value = (byte) value;
         }
-        
+
         public byte getValue() {
             return value;
         }
-        
+
         public static GeopackageBinaryType valueOf(byte b) {
             for (GeopackageBinaryType et : values()) {
                 if (et.value == b) return et;
             }
             return null;
         }
-    };
-    
+    }
+
     private byte b;
-   
-    private static byte MASK_BINARY_TYPE = (byte) 0x20;        //00100000
-    private static byte MASK_EMPTY = (byte) 0x10;       //00010000
-    private static byte MASK_ENVELOPE_IND = (byte) 0x0e; //00001110
-    private static byte MASK_ENDIANESS = (byte) 0x01;    //00000001
+
+    private static byte MASK_BINARY_TYPE = (byte) 0x20; // 00100000
+    private static byte MASK_EMPTY = (byte) 0x10; // 00010000
+    private static byte MASK_ENVELOPE_IND = (byte) 0x0e; // 00001110
+    private static byte MASK_ENDIANESS = (byte) 0x01; // 00000001
 
     public GeometryHeaderFlags(byte b) {
         this.b = b;
@@ -76,10 +76,10 @@ public class GeometryHeaderFlags {
     }
 
     public void setEndianess(int endian) {
-        byte e = (byte) (endian == ByteOrderValues.LITTLE_ENDIAN ? 1 : 0); 
+        byte e = (byte) (endian == ByteOrderValues.LITTLE_ENDIAN ? 1 : 0);
         b |= (e & MASK_ENDIANESS);
     }
-    
+
     public boolean isEmpty() {
         return (b & MASK_EMPTY) == MASK_EMPTY;
     }
@@ -91,11 +91,11 @@ public class GeometryHeaderFlags {
             b &= ~MASK_EMPTY;
         }
     }
-    
+
     public GeopackageBinaryType getBinaryType() {
         return GeopackageBinaryType.valueOf((byte) ((b & MASK_BINARY_TYPE) >> 1));
     }
-    
+
     public void setBinaryType(GeopackageBinaryType binaryType) {
         b |= ((binaryType.getValue() << 1) & MASK_BINARY_TYPE);
     }

@@ -16,15 +16,9 @@
  */
 package org.geotools.data.shapefile.shp;
 
-import org.geotools.data.DataSourceException;
+import org.geotools.api.data.DataSourceException;
 
-/**
- * Thrown when an error relating to the shapefile occures
- * 
- *
- *
- * @source $URL$
- */
+/** Thrown when an error relating to the shapefile occures */
 public class ShapefileException extends DataSourceException {
 
     private static final long serialVersionUID = -6523799964553991364L;

@@ -19,22 +19,16 @@ package org.geotools.geojson.geom;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-
 import org.json.simple.parser.ParseException;
+import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.geom.GeometryFactory;
+import org.locationtech.jts.geom.MultiPoint;
+import org.locationtech.jts.geom.impl.CoordinateArraySequence;
 
-import com.vividsolutions.jts.geom.Coordinate;
-import com.vividsolutions.jts.geom.GeometryFactory;
-import com.vividsolutions.jts.geom.MultiPoint;
-
-/**
- * 
- *
- * @source $URL$
- */
 public class MultiPointHandler extends GeometryHandlerBase<MultiPoint> {
 
     List<Coordinate> coordinates;
-    
+
     public MultiPointHandler(GeometryFactory factory) {
         super(factory);
     }
@@ -42,20 +36,20 @@ public class MultiPointHandler extends GeometryHandlerBase<MultiPoint> {
     @Override
     public boolean startObjectEntry(String key) throws ParseException, IOException {
         if ("coordinates".equals(key)) {
-            coordinates = new ArrayList();
+            coordinates = new ArrayList<>();
         }
         return true;
     }
-    
+
     @Override
     public boolean startArray() throws ParseException, IOException {
         if (ordinates == null) {
-            ordinates = new ArrayList();
+            ordinates = new ArrayList<>();
         }
-        
+
         return true;
     }
-    
+
     @Override
     public boolean endArray() throws ParseException, IOException {
         if (ordinates != null) {
@@ -64,11 +58,11 @@ public class MultiPointHandler extends GeometryHandlerBase<MultiPoint> {
         }
         return true;
     }
-    
+
     @Override
     public boolean endObject() throws ParseException, IOException {
         if (coordinates != null) {
-            value = factory.createMultiPoint(coordinates(coordinates));
+            value = factory.createMultiPoint(new CoordinateArraySequence(coordinates(coordinates)));
             coordinates = null;
         }
         return true;

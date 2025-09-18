@@ -16,28 +16,24 @@
  */
 package org.geotools.data.mysql;
 
-import static org.geotools.data.mysql.MySQLDataStoreFactory.*;
+import static org.geotools.data.mysql.MySQLDataStoreFactory.STORAGE_ENGINE;
 
 import java.util.Map;
-
 import org.geotools.jdbc.JDBCJNDIDataStoreFactory;
 
 /**
  * JNDI DataStoreFactory for mysql database.
- * 
+ *
  * @author Christian Mueller
- * 
- *
- *
- *
- * @source $URL$
  */
+// temporary work around, the factory parameters map will be fixed separately
+@SuppressWarnings("unchecked")
 public class MySQLJNDIDataStoreFactory extends JDBCJNDIDataStoreFactory {
 
     public MySQLJNDIDataStoreFactory() {
         super(new MySQLDataStoreFactory());
     }
-    
+
     @Override
     protected void setupParameters(Map parameters) {
         super.setupParameters(parameters);

@@ -17,24 +17,23 @@
 package org.geotools.geopkg;
 
 import java.util.Date;
-
 import org.geotools.geometry.jts.ReferencedEnvelope;
 
 /**
  * Entry in a geopackage.
- * <p>
- * This class corresponds to the "geopackage_contents" table.
- * </p>
- * @author Justin Deoliveira, OpenGeo
  *
+ * <p>This class corresponds to the "geopackage_contents" table.
+ *
+ * @author Justin Deoliveira, OpenGeo
  */
 public class Entry {
 
     public static enum DataType {
-        Feature("features"), Raster("rasters"), Tile("tiles"), 
-        FeatureWithRaster("featuresWithRasters");
+        Feature("features"),
+        Tile("tiles");
 
         String value;
+
         DataType(String value) {
             this.value = value;
         }

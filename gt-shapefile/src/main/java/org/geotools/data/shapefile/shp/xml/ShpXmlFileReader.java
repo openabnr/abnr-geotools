@@ -31,7 +31,7 @@ import javax.xml.stream.XMLStreamReader;
 import org.geotools.data.shapefile.files.FileReader;
 import org.geotools.data.shapefile.files.ShpFileType;
 import org.geotools.data.shapefile.files.ShpFiles;
-import com.vividsolutions.jts.geom.Envelope;
+import org.locationtech.jts.geom.Envelope;
 
 public class ShpXmlFileReader implements FileReader {
 
@@ -88,8 +88,7 @@ public class ShpXmlFileReader implements FileReader {
         Envelope lbounding = new Envelope();
         if (seekElement(reader, "spdom")) {
             int tag;
-            while ((tag = reader.nextTag()) != END_ELEMENT
-                    && !"spdom".equals(reader.getLocalName())) {
+            while ((tag = reader.nextTag()) != END_ELEMENT && !"spdom".equals(reader.getLocalName())) {
                 if (tag == START_ELEMENT) {
                     switch (reader.getLocalName()) {
                         case "bounding":
@@ -108,8 +107,7 @@ public class ShpXmlFileReader implements FileReader {
         return idInfo;
     }
 
-    private boolean seekElement(XMLStreamReader reader, String elementName)
-            throws XMLStreamException {
+    private boolean seekElement(XMLStreamReader reader, String elementName) throws XMLStreamException {
         reader.require(START_ELEMENT, null, null);
         final String thisElem = reader.getLocalName();
         while (true) {
@@ -149,6 +147,7 @@ public class ShpXmlFileReader implements FileReader {
         return new Envelope(minX, maxX, minY, maxY);
     }
 
+    @Override
     public String id() {
         return "Shp Xml Reader";
     }

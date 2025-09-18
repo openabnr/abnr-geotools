@@ -18,22 +18,15 @@ package org.geotools.geojson.geom;
 
 import java.io.IOException;
 import java.util.ArrayList;
-
 import org.json.simple.parser.ParseException;
+import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.geom.GeometryFactory;
+import org.locationtech.jts.geom.LineString;
 
-import com.vividsolutions.jts.geom.Coordinate;
-import com.vividsolutions.jts.geom.GeometryFactory;
-import com.vividsolutions.jts.geom.LineString;
-
-/**
- * 
- *
- * @source $URL$
- */
 public class LineHandler extends GeometryHandlerBase<LineString> {
 
-    ArrayList coordinates;
-    
+    ArrayList<Coordinate> coordinates;
+
     public LineHandler(GeometryFactory factory) {
         super(factory);
     }
@@ -41,11 +34,11 @@ public class LineHandler extends GeometryHandlerBase<LineString> {
     @Override
     public boolean startObjectEntry(String key) throws ParseException, IOException {
         if ("coordinates".equals(key)) {
-            coordinates = new ArrayList();
+            coordinates = new ArrayList<>();
         }
         return true;
     }
-    
+
     @Override
     public boolean endObject() throws ParseException, IOException {
         if (coordinates != null) {
@@ -55,15 +48,15 @@ public class LineHandler extends GeometryHandlerBase<LineString> {
         }
         return true;
     }
-    
+
     @Override
     public boolean startArray() throws ParseException, IOException {
         if (ordinates == null) {
-            ordinates = new ArrayList();
+            ordinates = new ArrayList<>();
         }
         return true;
     }
-    
+
     @Override
     public boolean endArray() throws ParseException, IOException {
         if (ordinates != null) {
@@ -71,8 +64,7 @@ public class LineHandler extends GeometryHandlerBase<LineString> {
             coordinates.add(c);
             ordinates = null;
         }
-        
+
         return true;
     }
-    
 }

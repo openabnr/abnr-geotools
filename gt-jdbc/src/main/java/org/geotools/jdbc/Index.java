@@ -20,12 +20,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-
-import org.geotools.factory.Hints;
+import org.geotools.util.factory.Hints;
 
 /**
  * Represents a database index
- * 
+ *
  * @author Andrea Aime - GeoSolutions
  */
 public class Index {
@@ -43,65 +42,57 @@ public class Index {
         super();
         this.typeName = typeName;
         this.indexName = indexName;
-        this.attributes = new ArrayList<String>(Arrays.asList(attributes));
+        this.attributes = new ArrayList<>(Arrays.asList(attributes));
         this.unique = unique;
     }
 
-    public Index(String typeName, String indexName, boolean unique, Hints hints,
-            String... attributes) {
+    public Index(String typeName, String indexName, boolean unique, Hints hints, String... attributes) {
         super();
         this.typeName = typeName;
         this.indexName = indexName;
         this.hints = hints;
-        this.attributes = new ArrayList<String>(Arrays.asList(attributes));
+        this.attributes = new ArrayList<>(Arrays.asList(attributes));
         this.unique = unique;
     }
 
-    /**
-     * True if the index is a unique one, false otherwise
-     * 
-     * @return
-     */
+    /** True if the index is a unique one, false otherwise */
     public boolean isUnique() {
         return unique;
     }
 
-    /**
-     * An un-modifiable list of the attributes in the index
-     */
+    /** An un-modifiable list of the attributes in the index */
     public List<String> getAttributes() {
         return Collections.unmodifiableList(attributes);
     }
 
-    /**
-     * The feature type owning this index
-     */
+    /** The feature type owning this index */
     public String getTypeName() {
         return typeName;
     }
 
-    /**
-     * The index name
-     * 
-     * @return
-     */
+    /** The index name */
     public String getIndexName() {
         return indexName;
     }
 
-    /**
-     * Retrieves the hints for this index.
-     * 
-     * @return
-     */
+    /** Retrieves the hints for this index. */
     public Hints getHints() {
         return hints;
     }
 
     @Override
     public String toString() {
-        return "Index [typeName=" + typeName + ", indexName=" + indexName + ", unique=" + unique
-                + ", attributes=" + attributes + ", hints=" + hints + "]";
+        return "Index [typeName="
+                + typeName
+                + ", indexName="
+                + indexName
+                + ", unique="
+                + unique
+                + ", attributes="
+                + attributes
+                + ", hints="
+                + hints
+                + "]";
     }
 
     @Override
@@ -118,38 +109,23 @@ public class Index {
 
     @Override
     public boolean equals(Object obj) {
-        if (this == obj)
-            return true;
-        if (obj == null)
-            return false;
-        if (getClass() != obj.getClass())
-            return false;
+        if (this == obj) return true;
+        if (obj == null) return false;
+        if (getClass() != obj.getClass()) return false;
         Index other = (Index) obj;
         if (attributes == null) {
-            if (other.attributes != null)
-                return false;
-        } else if (!attributes.equals(other.attributes))
-            return false;
+            if (other.attributes != null) return false;
+        } else if (!attributes.equals(other.attributes)) return false;
         if (hints == null) {
-            if (other.hints != null)
-                return false;
-        } else if (!hints.equals(other.hints))
-            return false;
+            if (other.hints != null) return false;
+        } else if (!hints.equals(other.hints)) return false;
         if (indexName == null) {
-            if (other.indexName != null)
-                return false;
-        } else if (!indexName.equals(other.indexName))
-            return false;
+            if (other.indexName != null) return false;
+        } else if (!indexName.equals(other.indexName)) return false;
         if (typeName == null) {
-            if (other.typeName != null)
-                return false;
-        } else if (!typeName.equals(other.typeName))
-            return false;
-        if (unique != other.unique)
-            return false;
+            if (other.typeName != null) return false;
+        } else if (!typeName.equals(other.typeName)) return false;
+        if (unique != other.unique) return false;
         return true;
     }
-
-
-
 }

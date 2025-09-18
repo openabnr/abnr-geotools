@@ -2,7 +2,7 @@
  *    GeoTools - The Open Source Java GIS Toolkit
  *    http://geotools.org
  *
- *    (C) 2005-2008, Open Source Geospatial Foundation (OSGeo)
+ *    (C) 2005-2015, Open Source Geospatial Foundation (OSGeo)
  *
  *    This library is free software; you can redistribute it and/or
  *    modify it under the terms of the GNU Lesser General Public
@@ -23,32 +23,25 @@ import java.util.Iterator;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
-import org.geotools.data.shapefile.index.CloseableIterator;
+import org.geotools.api.data.CloseableIterator;
 import org.geotools.data.shapefile.index.Data;
 import org.geotools.data.shapefile.shp.IndexFile;
-
-import com.vividsolutions.jts.geom.Envelope;
+import org.locationtech.jts.geom.Envelope;
 
 /**
  * Java porting of mapserver quadtree implementation.<br>
  * <br>
- * Note that this implementation is <b>not thread safe</b>, so don't share the
- * same instance across two or more threads.
- * 
- * TODO: example of typical use...
- * 
+ * Note that this implementation is <b>not thread safe</b>, so don't share the same instance across two or more threads.
+ *
+ * <p>TODO: example of typical use...
+ *
  * @author Tommaso Nolli
- *
- *
- * @source $URL$
  */
 public class QuadTree implements Closeable {
 
     private static final double SPLITRATIO = 0.55d;
 
-    private static final Logger LOGGER = org.geotools.util.logging.Logging
-            .getLogger("org.geotools.index.quadtree");
+    private static final Logger LOGGER = org.geotools.util.logging.Logging.getLogger(QuadTree.class);
 
     private Node root;
     private int numShapes;
@@ -56,15 +49,13 @@ public class QuadTree implements Closeable {
 
     private IndexFile indexfile;
 
-    private Set iterators = new HashSet();
+    private Set<Iterator<Data>> iterators = new HashSet<>();
 
     /**
      * Constructor. The maxDepth will be calculated.
-     * 
-     * @param numShapes
-     *                The total number of shapes to index
-     * @param maxBounds
-     *                The bounds of all geometries to be indexed
+     *
+     * @param numShapes The total number of shapes to index
+     * @param maxBounds The bounds of all geometries to be indexed
      */
     public QuadTree(int numShapes, Envelope maxBounds, IndexFile file) {
         this(numShapes, 0, maxBounds, file);
@@ -72,16 +63,12 @@ public class QuadTree implements Closeable {
 
     /**
      * Constructor.
-     * 
-     * @param numShapes
-     *                The total number of shapes to index
-     * @param maxDepth
-     *                The max depth of the index, must be <= 65535
-     * @param maxBounds
-     *                The bounds of all geometries to be indexed
+     *
+     * @param numShapes The total number of shapes to index
+     * @param maxDepth The max depth of the index, must be <= 65535
+     * @param maxBounds The bounds of all geometries to be indexed
      */
-    public QuadTree(int numShapes, int maxDepth, Envelope maxBounds,
-            IndexFile file) {
+    public QuadTree(int numShapes, int maxDepth, Envelope maxBounds, IndexFile file) {
         if (maxDepth > 65535) {
             throw new IllegalArgumentException("maxDepth must be <= 65535");
         }
@@ -89,8 +76,7 @@ public class QuadTree implements Closeable {
         this.numShapes = numShapes;
         this.maxDepth = maxDepth;
 
-        if (maxBounds != null)
-            this.root = new Node(new Envelope(maxBounds));
+        if (maxBounds != null) this.root = new Node(new Envelope(maxBounds));
 
         if (maxDepth < 1) {
             /*
@@ -109,13 +95,10 @@ public class QuadTree implements Closeable {
     }
 
     /**
-     * Constructor. WARNING: using this constructor, you have to manually set
-     * the root
-     * 
-     * @param numShapes
-     *                The total number of shapes to index
-     * @param maxDepth
-     *                The max depth of the index, must be <= 65535
+     * Constructor. WARNING: using this constructor, you have to manually set the root
+     *
+     * @param numShapes The total number of shapes to index
+     * @param maxDepth The max depth of the index, must be <= 65535
      */
     public QuadTree(int numShapes, int maxDepth, IndexFile file) {
         this(numShapes, maxDepth, null, file);
@@ -123,27 +106,16 @@ public class QuadTree implements Closeable {
 
     /**
      * Inserts a shape record id in the quadtree
-     * 
-     * @param recno
-     *                The record number
-     * @param bounds
-     *                The bounding box
+     *
+     * @param recno The record number
+     * @param bounds The bounding box
      */
-    public void insert(int recno, Envelope bounds) throws StoreException {
+    public void insert(final int recno, final Envelope bounds) throws StoreException {
         this.insert(this.root, recno, bounds, this.maxDepth);
     }
 
-    /**
-     * Inserts a shape record id in the quadtree
-     * 
-     * @param node
-     * @param recno
-     * @param bounds
-     * @param maxDepth
-     * @throws StoreException
-     */
-    public void insert(Node node, int recno, Envelope bounds, int maxDepth)
-            throws StoreException {
+    /** Inserts a shape record id in the quadtree */
+    public void insert(Node node, final int recno, final Envelope recBounds, final int maxDepth) throws StoreException {
 
         if (maxDepth > 1 && node.getNumSubNodes() > 0) {
             /*
@@ -153,45 +125,44 @@ public class QuadTree implements Closeable {
             Node subNode = null;
             for (int i = 0; i < node.getNumSubNodes(); i++) {
                 subNode = node.getSubNode(i);
-                if (subNode.getBounds().contains(bounds)) {
-                    this.insert(subNode, recno, bounds, maxDepth - 1);
+                if (subNode.getBounds().contains(recBounds)) {
+                    this.insert(subNode, recno, recBounds, maxDepth - 1);
                     return;
                 }
             }
-        } 
+        }
         if (maxDepth > 1 && node.getNumSubNodes() < 4) {
             /*
              * Otherwise, consider creating four subnodes if could fit into
              * them, and adding to the appropriate subnode.
              */
-            Envelope half1, half2, quad1, quad2, quad3, quad4;
 
             Envelope[] tmp = this.splitBounds(node.getBounds());
-            half1 = tmp[0];
-            half2 = tmp[1];
+            Envelope half1 = tmp[0];
+            Envelope half2 = tmp[1];
 
             tmp = this.splitBounds(half1);
-            quad1 = tmp[0];
-            quad2 = tmp[1];
+            Envelope quad1 = tmp[0];
+            Envelope quad2 = tmp[1];
 
             tmp = this.splitBounds(half2);
-            quad3 = tmp[0];
-            quad4 = tmp[1];
+            Envelope quad3 = tmp[0];
+            Envelope quad4 = tmp[1];
 
-            Node subnode = null;            
-            if (quad1.contains(bounds)) {
+            Node subnode = null;
+            if (quad1.contains(recBounds)) {
                 subnode = new Node(quad1);
-            } else if(quad2.contains(bounds)) {
+            } else if (quad2.contains(recBounds)) {
                 subnode = new Node(quad2);
-            } else if(quad3.contains(bounds)) {
+            } else if (quad3.contains(recBounds)) {
                 subnode = new Node(quad3);
-            } else if(quad4.contains(bounds)) {
+            } else if (quad4.contains(recBounds)) {
                 subnode = new Node(quad4);
             }
-            
-            if(subnode != null) {
+
+            if (subnode != null) {
                 node.addSubNode(subnode);
-                this.insert(subnode, recno, bounds, maxDepth - 1);
+                this.insert(subnode, recno, recBounds, maxDepth - 1);
                 return;
             }
         }
@@ -200,11 +171,7 @@ public class QuadTree implements Closeable {
         node.addShapeId(recno);
     }
 
-    /**
-     * 
-     * @param bounds
-     * @return A List of Integer
-     */
+    /** @return A List of Integer */
     public CloseableIterator<Data> search(Envelope bounds) throws StoreException {
         if (LOGGER.isLoggable(Level.FINEST)) {
             LOGGER.log(Level.FINEST, "Querying " + bounds);
@@ -218,18 +185,12 @@ public class QuadTree implements Closeable {
         }
     }
 
-    /**
-     * Closes this QuadTree after use...
-     * 
-     * @throws StoreException
-     */
-    public void close(Iterator iter) throws IOException {
+    /** Closes this QuadTree after use... */
+    public void close(Iterator<Data> iter) throws IOException {
         iterators.remove(iter);
     }
 
-    /**
-     * 
-     */
+    /** */
     public boolean trim() throws StoreException {
         LOGGER.fine("Trimming the tree...");
         return this.trim(this.root);
@@ -237,9 +198,8 @@ public class QuadTree implements Closeable {
 
     /**
      * Trim subtrees, and free subnodes that come back empty.
-     * 
-     * @param node
-     *                The node to trim
+     *
+     * @param node The node to trim
      * @return true if this node has been trimmed
      */
     private boolean trim(Node node) throws StoreException {
@@ -248,9 +208,9 @@ public class QuadTree implements Closeable {
             dummy[i] = node.getSubNode(i);
         }
 
-        for (int i = 0; i < dummy.length; i++) {
-            if (this.trim(dummy[i])) {
-                node.removeSubNode(dummy[i]);
+        for (Node value : dummy) {
+            if (this.trim(value)) {
+                node.removeSubNode(value);
             }
         }
 
@@ -275,9 +235,8 @@ public class QuadTree implements Closeable {
 
     /**
      * Splits the specified Envelope
-     * 
-     * @param in
-     *                an Envelope to split
+     *
+     * @param in an Envelope to split
      * @return an array of 2 Envelopes
      */
     private Envelope[] splitBounds(Envelope in) {
@@ -289,73 +248,55 @@ public class QuadTree implements Closeable {
             range = in.getMaxX() - in.getMinX();
 
             calc = in.getMinX() + range * SPLITRATIO;
-            ret[0] = new Envelope(in.getMinX(), calc, in.getMinY(), in
-                    .getMaxY());
+            ret[0] = new Envelope(in.getMinX(), calc, in.getMinY(), in.getMaxY());
 
             calc = in.getMaxX() - range * SPLITRATIO;
-            ret[1] = new Envelope(calc, in.getMaxX(), in.getMinY(), in
-                    .getMaxY());
+            ret[1] = new Envelope(calc, in.getMaxX(), in.getMinY(), in.getMaxY());
         } else {
             // Split in Y direction
             range = in.getMaxY() - in.getMinY();
 
             calc = in.getMinY() + range * SPLITRATIO;
-            ret[0] = new Envelope(in.getMinX(), in.getMaxX(), in.getMinY(),
-                    calc);
+            ret[0] = new Envelope(in.getMinX(), in.getMaxX(), in.getMinY(), calc);
 
             calc = in.getMaxY() - range * SPLITRATIO;
-            ret[1] = new Envelope(in.getMinX(), in.getMaxX(), calc, in
-                    .getMaxY());
+            ret[1] = new Envelope(in.getMinX(), in.getMaxX(), calc, in.getMaxY());
         }
 
         return ret;
     }
 
-    /**
-     * @return Returns the maxDepth.
-     */
+    /** @return Returns the maxDepth. */
     public int getMaxDepth() {
         return this.maxDepth;
     }
 
-    /**
-     * @param maxDepth
-     *                The maxDepth to set.
-     */
+    /** @param maxDepth The maxDepth to set. */
     public void setMaxDepth(int maxDepth) {
         this.maxDepth = maxDepth;
     }
 
-    /**
-     * @return Returns the numShapes.
-     */
+    /** @return Returns the numShapes. */
     public int getNumShapes() {
         return this.numShapes;
     }
 
-    /**
-     * @param numShapes
-     *                The numShapes to set.
-     */
+    /** @param numShapes The numShapes to set. */
     public void setNumShapes(int numShapes) {
         this.numShapes = numShapes;
     }
 
-    /**
-     * @return Returns the root.
-     */
+    /** @return Returns the root. */
     public Node getRoot() {
         return this.root;
     }
 
-    /**
-     * @param root
-     *                The root to set.
-     */
+    /** @param root The root to set. */
     public void setRoot(Node root) {
         this.root = root;
     }
 
+    @Override
     public void close() throws StoreException {
         try {
             indexfile.close();
@@ -368,7 +309,7 @@ public class QuadTree implements Closeable {
         }
     }
 
-    public void registerIterator(Iterator object) {
+    public void registerIterator(Iterator<Data> object) {
         iterators.add(object);
     }
 

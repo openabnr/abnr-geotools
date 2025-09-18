@@ -7,37 +7,25 @@
                                                                                 
         Version: $Id$              
      ======================================================================= -->
-  <project xmlns="http://maven.apache.org/POM/4.0.0" 
-           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
-           xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 
-                               http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
     <groupId>org.geotools</groupId>
     <artifactId>plugin</artifactId>
-    <version>14.5</version>
+    <version>33.2</version>
   </parent>
-
 
   <!-- =========================================================== -->
   <!--     Module Description                                      -->
   <!-- =========================================================== -->
-  <groupId>com.abonaro.gis.geotools</groupId>
+  <groupId>com.abonaro.geotools</groupId>
   <artifactId>gt-shapefile</artifactId>
-  <version>14.5.3</version>
+  <version>33.2.1</version>
   <packaging>jar</packaging>
   <name>Shapefile module</name>
-  
 
-  <scm>
-    <connection>scm:git:[fetch=]https://github.com/openabnr/gt-shapefile.git[push=]git@github.com:openabnr/gt-shapefile.git</connection>
-    <url>https://github.com/openabnr/gt-shapefile</url>
-  </scm>
-
-  <description>
-    DataStore supporting the ESRI shapefile format. NG version
-  </description>
+  <description>DataStore supporting the ESRI shapefile format. NG version</description>
 
   <licenses>
     <license>
@@ -47,14 +35,13 @@
     </license>
   </licenses>
 
-
   <!-- =========================================================== -->
   <!--     Developers and Contributors                             -->
   <!-- =========================================================== -->
   <developers>
     <developer>
-      <name>James Macgill</name>
       <id>jmacgill</id>
+      <name>James Macgill</name>
       <email>jmacgill@users.sourceforge.net</email>
       <organization>CCG</organization>
       <roles>
@@ -62,8 +49,8 @@
       </roles>
     </developer>
     <developer>
-      <name>Ian Turton</name>
       <id>ianturton</id>
+      <name>Ian Turton</name>
       <email>ianturton@users.sourceforge.net</email>
       <organization>CCG</organization>
       <roles>
@@ -71,16 +58,16 @@
       </roles>
     </developer>
     <developer>
-      <name>Darren Edmonds</name>
       <id>dledmonds</id>
+      <name>Darren Edmonds</name>
       <email>dledmonds@btopenworld.com</email>
       <roles>
         <role>Java Developer</role>
       </roles>
     </developer>
     <developer>
-      <name>Andrea Aime</name>
       <id>aaime</id>
+      <name>Andrea Aime</name>
       <email>aaime@users.sourceforge.net</email>
       <organization>OpenGeo</organization>
       <roles>
@@ -89,8 +76,8 @@
       </roles>
     </developer>
     <developer>
-      <name>Ian Schneider</name>
       <id>en</id>
+      <name>Ian Schneider</name>
       <email>ian.schneider@ars.usda.gov</email>
       <organization>USDA/ARS</organization>
       <roles>
@@ -98,8 +85,8 @@
       </roles>
     </developer>
     <developer>
-      <name>Jesse Eichar</name>
       <id>en</id>
+      <name>Jesse Eichar</name>
       <email>jeichar@users.sourceforge.net</email>
       <organization>CampToCamp</organization>
       <roles>
@@ -132,6 +119,18 @@
     </contributor>
   </contributors>
 
+  <scm>
+    <connection>scm:git:[fetch=]https://github.com/openabnr/gt-shapefile.git[push=]git@github.com:openabnr/gt-shapefile.git</connection>
+    <url>https://github.com/openabnr/gt-shapefile</url>
+  </scm>
+
+  <distributionManagement>
+    <repository>
+      <id>abnr.nexus.release</id>
+      <name>ABONARO Nexus Repository</name>
+      <url>https://dev.abonaro.kr/nexus3/repository/maven-releases/</url>
+    </repository>
+  </distributionManagement>
 
   <!-- =========================================================== -->
   <!--     Dependency Management                                   -->
@@ -139,16 +138,24 @@
   <dependencies>
     <dependency>
       <groupId>org.geotools</groupId>
-      <artifactId>gt-data</artifactId>
+      <artifactId>gt-main</artifactId>
       <version>${project.parent.version}</version>
     </dependency>
 
     <dependency>
-      <groupId>org.jdom</groupId>
-      <artifactId>jdom</artifactId>
+      <groupId>commons-io</groupId>
+      <artifactId>commons-io</artifactId>
+      <scope>compile</scope>
     </dependency>
-
   </dependencies>
+
+  <repositories>
+    <repository>
+      <id>geotools</id>
+      <name>geotools</name>
+      <url>https://repo.osgeo.org/repository/release/</url>
+    </repository>
+  </repositories>
 
   <build>
     <pluginManagement>
@@ -159,15 +166,16 @@
             <additionalProjectnatures>
               <projectnature>org.springframework.ide.eclipse.core.springnature</projectnature>
             </additionalProjectnatures>
-            <!--<downloadSources>true</downloadSources> <downloadJavadocs>true</downloadJavadocs> -->
+            <!--<downloadSources>true</downloadSources>
+            <downloadJavadocs>true</downloadJavadocs> -->
           </configuration>
         </plugin>
         <plugin>
           <artifactId>maven-compiler-plugin</artifactId>
-          <version>3.6.0</version>
+          <version>3.11.0</version>
           <configuration>
-            <source>1.7</source>
-            <target>1.7</target>
+            <source>17</source>
+            <target>17</target>
             <!-- <compilerArgument>-Xlint:all</compilerArgument> -->
             <showWarnings>false</showWarnings>
             <showDeprecation>false</showDeprecation>
@@ -175,7 +183,7 @@
         </plugin>
         <plugin>
           <artifactId>maven-source-plugin</artifactId>
-          <version>3.0.1</version>
+          <version>3.3.0</version>
           <executions>
             <execution>
               <id>attach-sources</id>
@@ -187,54 +195,13 @@
         </plugin>
         <plugin>
           <artifactId>maven-surefire-plugin</artifactId>
-          <version>2.19.1</version>
+          <version>2.22.1</version>
           <configuration>
             <skipTests>true</skipTests>
-          </configuration>
-        </plugin>
-        <!--This plugin's configuration is used to store Eclipse m2e settings only. It has no influence on the Maven build itself. -->
-        <plugin>
-          <groupId>org.eclipse.m2e</groupId>
-          <artifactId>lifecycle-mapping</artifactId>
-          <version>1.0.0</version>
-          <configuration>
-            <lifecycleMappingMetadata>
-              <pluginExecutions>
-                <pluginExecution>
-                  <pluginExecutionFilter>
-                    <groupId>pl.project13.maven</groupId>
-                    <artifactId>git-commit-id-plugin</artifactId>
-                    <versionRange>[2.1.2,)</versionRange>
-                    <goals>
-                      <goal>revision</goal>
-                    </goals>
-                  </pluginExecutionFilter>
-                  <action>
-                    <ignore></ignore>
-                  </action>
-                </pluginExecution>
-              </pluginExecutions>
-            </lifecycleMappingMetadata>
           </configuration>
         </plugin>
       </plugins>
     </pluginManagement>
   </build>
-
-  <distributionManagement>
-    <repository>
-      <id>abnr.nexus.release</id>
-      <name>ABONARO Nexus Repository</name>
-      <url>https://dev.abonaro.kr/nexus3/repository/maven-releases/</url>
-    </repository>
-  </distributionManagement>
-
-  <repositories>
-    <repository>
-      <id>geotools</id>
-      <name>geotools</name>
-      <url>https://repo.osgeo.org/repository/release/</url>
-    </repository>
-  </repositories>
 
 </project>

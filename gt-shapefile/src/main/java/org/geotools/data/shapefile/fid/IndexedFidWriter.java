@@ -16,29 +16,24 @@
  */
 package org.geotools.data.shapefile.fid;
 
-import static org.geotools.data.shapefile.files.ShpFileType.*;
+import static org.geotools.data.shapefile.files.ShpFileType.FIX;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
-
 import org.geotools.data.shapefile.files.FileWriter;
 import org.geotools.data.shapefile.files.ShpFiles;
 import org.geotools.data.shapefile.files.StorageFile;
 import org.geotools.data.shapefile.files.StreamLogging;
-import org.geotools.resources.NIOUtilities;
+import org.geotools.util.NIOUtilities;
 
 /**
  * The Writer writes out the fid and record number of features to the fid index file.
- * 
+ *
  * @author Jesse
- *
- *
- *
- * @source $URL$
  */
-public class IndexedFidWriter implements FileWriter {
+public class IndexedFidWriter implements FileWriter, AutoCloseable {
     public static final int HEADER_SIZE = 13;
     public static final int RECORD_SIZE = 12;
     private FileChannel channel;
@@ -56,38 +51,35 @@ public class IndexedFidWriter implements FileWriter {
     private StorageFile storageFile;
 
     /**
-     * Creates a new instance and writes the fids to a storage file which is replaces the original
-     * on close().
-     * 
+     * Creates a new instance and writes the fids to a storage file which is replaces the original on close().
+     *
      * @param shpFiles The shapefiles to used
-     * @throws IOException
      */
-    public IndexedFidWriter( ShpFiles shpFiles ) throws IOException {
+    public IndexedFidWriter(ShpFiles shpFiles) throws IOException {
         storageFile = shpFiles.getStorageFile(FIX);
         init(shpFiles, storageFile);
     }
 
     /**
      * Create a new instance<br>
-     * Note: {@link StorageFile#replaceOriginal()} is NOT called.  Call {@link #IndexedFidWriter(ShpFiles)} for that 
-     * behaviour.  
+     * Note: {@link StorageFile#replaceOriginal()} is NOT called. Call {@link #IndexedFidWriter(ShpFiles)} for that
+     * behaviour.
+     *
      * @param shpFiles The shapefiles to used
-     * @param storageFile the storage file that will be written to.  It will NOT be closed.
-     * @throws IOException
+     * @param storageFile the storage file that will be written to. It will NOT be closed.
      */
-    public IndexedFidWriter( ShpFiles shpFiles, StorageFile storageFile ) throws IOException {
-        // Note do NOT assign storageFile so that it is closed because this method method requires that
+    public IndexedFidWriter(ShpFiles shpFiles, StorageFile storageFile) throws IOException {
+        // Note do NOT assign storageFile so that it is closed because this method method requires
+        // that
         // the caller close the storage file.
         // Call the single argument constructor instead
         init(shpFiles, storageFile);
     }
 
-    private void init( ShpFiles shpFiles, StorageFile storageFile ) throws IOException {
+    private void init(ShpFiles shpFiles, StorageFile storageFile) throws IOException {
         if (!shpFiles.isLocal()) {
-            throw new IllegalArgumentException(
-                    "Currently only local files are supported for writing");
+            throw new IllegalArgumentException("Currently only local files are supported for writing");
         }
-
 
         try {
             reader = new IndexedFidReader(shpFiles);
@@ -107,28 +99,20 @@ public class IndexedFidWriter implements FileWriter {
         fidIndex = 0;
     }
 
-    private IndexedFidWriter() {
-    }
+    private IndexedFidWriter() {}
 
-    /**
-     * Allocate some buffers for writing.
-     */
+    /** Allocate some buffers for writing. */
     private void allocateBuffers() {
         writeBuffer = NIOUtilities.allocate(HEADER_SIZE + RECORD_SIZE * 1024);
     }
 
-    /**
-     * Drain internal buffers into underlying channels.
-     * 
-     * @throws IOException DOCUMENT ME!
-     */
+    /** Drain internal buffers into underlying channels. */
     private void drain() throws IOException {
         writeBuffer.flip();
 
         int written = 0;
 
-        while( writeBuffer.remaining() > 0 )
-            written += channel.write(writeBuffer, position);
+        while (writeBuffer.remaining() > 0) written += channel.write(writeBuffer, position);
 
         position += written;
 
@@ -137,10 +121,10 @@ public class IndexedFidWriter implements FileWriter {
 
     private void writeHeader() throws IOException {
         ByteBuffer buffer = NIOUtilities.allocate(HEADER_SIZE);
-        
+
         try {
             buffer.put((byte) 1);
-    
+
             buffer.putLong(recordIndex);
             buffer.putInt(removes);
             buffer.flip();
@@ -156,8 +140,7 @@ public class IndexedFidWriter implements FileWriter {
 
     public long next() throws IOException {
 
-        if (current != -1)
-            write();
+        if (current != -1) write();
 
         if (reader.hasNext()) {
             reader.next();
@@ -171,13 +154,14 @@ public class IndexedFidWriter implements FileWriter {
         return fidIndex;
     }
 
+    @SuppressWarnings("PMD.UseTryWithResources")
+    @Override
     public void close() throws IOException {
         if (closed) {
             return;
         }
 
         try {
-
             finishLastWrite();
         } finally {
             try {
@@ -194,18 +178,16 @@ public class IndexedFidWriter implements FileWriter {
     }
 
     private void closeWriterChannels() throws IOException {
-        if (channel.isOpen())
-            channel.close();
+        if (channel.isOpen()) channel.close();
         streamLogger.close();
         if (writeBuffer != null) {
             NIOUtilities.clean(writeBuffer, false);
             writeBuffer = null;
         }
-
     }
 
     private void finishLastWrite() throws IOException {
-        while( hasNext() ) {
+        while (hasNext()) {
             next();
         }
 
@@ -218,39 +200,51 @@ public class IndexedFidWriter implements FileWriter {
     }
 
     /**
-     * Increments the fidIndex by 1. Indicates that a feature was removed from the location. This is
-     * intended to ensure that FIDs stay constant over time. Consider the following case of 5
-     * features. feature 1 has fid typename.0 feature 2 has fid typename.1 feature 3 has fid
-     * typename.2 feature 4 has fid typename.3 feature 5 has fid typename.4 when feature 3 is
-     * removed/deleted the following usage of the write should take place: next(); (move to feature
-     * 1) next(); (move to feature 2) next(); (move to feature 3) remove();(delete feature 3)
-     * next(); (move to feature 4) // optional write(); (write feature 4) next(); (move to feature
-     * 5) write(); (write(feature 5)
-     * 
-     * @throws IOException
+     * Increments the fidIndex by 1.
+     *
+     * <p>Indicates that a feature was removed from the location. This is intended to ensure that FIDs stay constant
+     * over time. Consider the following case of 5 features.
+     *
+     * <ul>
+     *   <li>feature 1 has fid typename.0
+     *   <li>feature 2 has fid typename.1
+     *   <li>feature 3 has fid typename.2
+     *   <li>feature 4 has fid typename.3
+     *   <li>feature 5 has fid typename.4
+     * </ul>
+     *
+     * <p>when feature 3 is removed/deleted the following usage of the write should take place:
+     *
+     * <ul>
+     *   <li>next(); (move to feature 1)
+     *   <li>next(); (move to feature 2)
+     *   <li>next(); (move to feature 3)
+     *   <li>remove();(delete feature 3)
+     *   <li>next(); (move to feature 4)
+     *   <li>// optional write(); (write feature 4)
+     *   <li>next(); (move to feature 5)
+     *   <li>write(); (write(feature 5)
+     * </ul>
+     *
+     * @throws IOException if current fid index is null
      */
     public void remove() throws IOException {
-        if (current == -1)
-            throw new IOException("Current fid index is null, next must be called before remove");
+        if (current == -1) throw new IOException("Current fid index is null, next must be called before remove");
         if (hasNext()) {
             removes++;
             current = -1;
-
-            // reader.next();
         }
     }
 
     /**
-     * Writes the current fidIndex. Writes to the same place in the file each time. Only
-     * {@link #next()} moves forward in the file.
-     * 
-     * @throws IOException
+     * Writes the current fidIndex. Writes to the same place in the file each time. Only {@link #next()} moves forward
+     * in the file.
+     *
      * @see #next()
      * @see #remove()
      */
     public void write() throws IOException {
-        if (current == -1)
-            throw new IOException("Current fid index is null, next must be called before write()");
+        if (current == -1) throw new IOException("Current fid index is null, next must be called before write()");
 
         if (writeBuffer == null) {
             allocateBuffers();
@@ -271,31 +265,34 @@ public class IndexedFidWriter implements FileWriter {
         return closed;
     }
 
+    @Override
     public String id() {
         return getClass().getName();
     }
 
-    public static final IndexedFidWriter EMPTY_WRITER = new IndexedFidWriter(){
+    public static final IndexedFidWriter EMPTY_WRITER = new IndexedFidWriter() {
         @Override
-        public void close() throws IOException {
-        }
+        public void close() throws IOException {}
+
         @Override
         public boolean hasNext() throws IOException {
             return false;
         }
+
         @Override
         public boolean isClosed() {
             return false;
         }
+
         @Override
-        public void write() throws IOException {
-        }
+        public void write() throws IOException {}
+
         @Override
         public long next() throws IOException {
             return 0;
         }
+
         @Override
-        public void remove() throws IOException {
-        }
+        public void remove() throws IOException {}
     };
 }

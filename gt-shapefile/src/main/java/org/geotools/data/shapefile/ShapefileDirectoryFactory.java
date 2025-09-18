@@ -19,38 +19,34 @@ package org.geotools.data.shapefile;
 import java.io.File;
 import java.net.URL;
 import java.util.Map;
-
-import org.geotools.data.DataUtilities;
+import org.geotools.util.URLs;
 
 /**
  * Creates a directory datastore pointing to a directory of shapefiles
- * 
- * @author Andrea Aime
- * 
  *
- *
- * @source $URL$
- *         main/java/org/geotools/data/dir/DirectoryDataStoreFactory.java $
+ * @author Andrea Aime main/java/org/geotools/data/dir/DirectoryDataStoreFactory.java $
  */
 public class ShapefileDirectoryFactory extends ShapefileDataStoreFactory {
     /** The directory to be scanned for file data stores */
-    public static final Param URLP = new Param("url", URL.class,
-            "Directory containing geospatial files", true);
+    public static final Param URLP = new Param("url", URL.class, "Directory containing geospatial files", true);
 
+    @Override
     public String getDisplayName() {
         return "Directory of spatial files (shapefiles)";
     }
 
+    @Override
     public String getDescription() {
         return "Takes a directory of shapefiles and exposes it as a data store";
     }
 
-    public boolean canProcess(Map params) {
+    @Override
+    public boolean canProcess(Map<String, ?> params) {
         // we don't try to steal single shapefiles away from the main factory
         if (super.canProcess(params)) {
             try {
                 URL url = (URL) URLP.lookUp(params);
-                File f = DataUtilities.urlToFile(url);
+                File f = URLs.urlToFile(url);
                 return f != null && f.exists() && f.isDirectory();
             } catch (Exception e) {
                 return false;

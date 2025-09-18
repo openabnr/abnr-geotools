@@ -19,47 +19,40 @@ package org.geotools.geojson.feature;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-
 import org.geotools.geojson.HandlerBase;
 import org.geotools.geojson.IContentHandler;
 import org.json.simple.parser.ParseException;
 
-/**
- * 
- *
- * @source $URL$
- */
-public class ArrayHandler extends HandlerBase implements IContentHandler<List> {
+public class ArrayHandler extends HandlerBase implements IContentHandler<List<Object>> {
 
-    List values;
-    List list;
-    
+    List<Object> values;
+    List<Object> list;
+
     @Override
     public boolean startArray() throws ParseException, IOException {
-        values = new ArrayList();
+        values = new ArrayList<>();
         return true;
     }
-    
+
     @Override
     public boolean primitive(Object value) throws ParseException, IOException {
         if (values != null) {
             values.add(value);
             return true;
-        }
-        else {
+        } else {
             return super.primitive(value);
         }
     }
-    
+
     @Override
     public boolean endArray() throws ParseException, IOException {
         list = values;
         values = null;
         return true;
     }
-    
-    public List getValue() {
+
+    @Override
+    public List<Object> getValue() {
         return list;
     }
-
 }

@@ -2,7 +2,7 @@
  *    GeoTools - The Open Source Java GIS Toolkit
  *    http://geotools.org
  *
- *    (C) 2002-2015, Open Source Geospatial Foundation (OSGeo)
+ *    (C) 2002-2016, Open Source Geospatial Foundation (OSGeo)
  *
  *    This library is free software; you can redistribute it and/or
  *    modify it under the terms of the GNU Lesser General Public
@@ -23,103 +23,110 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
 import java.util.Map;
-
-import org.geotools.factory.Hints;
+import java.util.Set;
+import org.geotools.api.feature.simple.SimpleFeatureType;
+import org.geotools.api.feature.type.AttributeDescriptor;
+import org.geotools.api.feature.type.GeometryDescriptor;
+import org.geotools.api.referencing.crs.CoordinateReferenceSystem;
 import org.geotools.jdbc.ColumnMetadata;
 import org.geotools.jdbc.JDBCDataStore;
 import org.geotools.jdbc.PreparedFilterToSQL;
 import org.geotools.jdbc.PreparedStatementSQLDialect;
-import org.opengis.feature.simple.SimpleFeatureType;
-import org.opengis.feature.type.GeometryDescriptor;
+import org.geotools.util.factory.Hints;
+import org.locationtech.jts.geom.Envelope;
+import org.locationtech.jts.geom.Geometry;
+import org.locationtech.jts.geom.GeometryFactory;
+import org.locationtech.jts.geom.LinearRing;
+import org.locationtech.jts.io.WKBWriter;
 
-import com.vividsolutions.jts.geom.Envelope;
-import com.vividsolutions.jts.geom.Geometry;
-import com.vividsolutions.jts.geom.GeometryFactory;
-import com.vividsolutions.jts.geom.LinearRing;
-import com.vividsolutions.jts.io.WKBWriter;
-
-
-/**
- * 
- *
- * @source $URL$
- */
 public class PostGISPSDialect extends PreparedStatementSQLDialect {
-    
+
     private PostGISDialect delegate;
 
     public PostGISPSDialect(JDBCDataStore store, PostGISDialect delegate) {
         super(store);
         this.delegate = delegate;
+        // prepared statements enable native binary transfer, no need to base64 encode
+        this.delegate.base64EncodingEnabled = false;
     }
-    
+
+    @Override
+    protected void addSupportedHints(Set<Hints.Key> hints) {
+        delegate.addSupportedHints(hints);
+    }
+
     @Override
     public boolean isAggregatedSortSupported(String function) {
         return "distinct".equalsIgnoreCase(function);
     }
-    
+
     @Override
-    public boolean includeTable(String schemaName, String tableName, Connection cx)
-            throws SQLException {
+    public boolean includeTable(String schemaName, String tableName, Connection cx) throws SQLException {
         return delegate.includeTable(schemaName, tableName, cx);
     }
-    
-        
-    public Envelope decodeGeometryEnvelope(ResultSet rs, int column,
-            Connection cx) throws SQLException, IOException {
+
+    @Override
+    public Envelope decodeGeometryEnvelope(ResultSet rs, int column, Connection cx) throws SQLException, IOException {
         return delegate.decodeGeometryEnvelope(rs, column, cx);
     }
-    
+
     @Override
-    public Geometry decodeGeometryValue(GeometryDescriptor descriptor, ResultSet rs, int column,
-            GeometryFactory factory, Connection cx) throws IOException, SQLException {
-        return delegate.decodeGeometryValue(descriptor, rs, column, factory, cx);
-    }
-
-
-    public Geometry decodeGeometryValue(GeometryDescriptor descriptor,
-            ResultSet rs, String column, GeometryFactory factory, Connection cx)
+    public Geometry decodeGeometryValue(
+            GeometryDescriptor descriptor,
+            ResultSet rs,
+            int column,
+            GeometryFactory factory,
+            Connection cx,
+            Hints hints)
             throws IOException, SQLException {
-        return delegate
-                .decodeGeometryValue(descriptor, rs, column, factory, cx);
+        return delegate.decodeGeometryValue(descriptor, rs, column, factory, cx, hints);
     }
 
     @Override
-    public void encodeGeometryColumn(GeometryDescriptor gatt, String prefix, int srid,
-            StringBuffer sql) {
-        delegate.encodeGeometryColumn(gatt, prefix, srid, sql);
+    public Geometry decodeGeometryValue(
+            GeometryDescriptor descriptor,
+            ResultSet rs,
+            String column,
+            GeometryFactory factory,
+            Connection cx,
+            Hints hints)
+            throws IOException, SQLException {
+        return delegate.decodeGeometryValue(descriptor, rs, column, factory, cx, hints);
     }
 
     @Override
-    public void encodeGeometryColumn(GeometryDescriptor gatt, String prefix,
-            int srid, Hints hints, StringBuffer sql) {
+    public void encodeGeometryColumn(GeometryDescriptor gatt, String prefix, int srid, Hints hints, StringBuffer sql) {
         delegate.encodeGeometryColumn(gatt, prefix, srid, hints, sql);
     }
 
-    public void encodeGeometryEnvelope(String tableName, String geometryColumn,
-            StringBuffer sql) {
+    @Override
+    public void encodeGeometryEnvelope(String tableName, String geometryColumn, StringBuffer sql) {
         delegate.encodeGeometryEnvelope(tableName, geometryColumn, sql);
     }
 
-
+    @Override
     public void encodePrimaryKey(String column, StringBuffer sql) {
         delegate.encodePrimaryKey(column, sql);
     }
 
-
-    public Integer getGeometrySRID(String schemaName, String tableName,
-            String columnName, Connection cx) throws SQLException {
+    @Override
+    public Integer getGeometrySRID(String schemaName, String tableName, String columnName, Connection cx)
+            throws SQLException {
         return delegate.getGeometrySRID(schemaName, tableName, columnName, cx);
     }
 
+    @Override
+    public CoordinateReferenceSystem createCRS(int srid, Connection cx) throws SQLException {
+        return delegate.createCRS(srid, cx);
+    }
 
+    @Override
     public String getGeometryTypeName(Integer type) {
         return delegate.getGeometryTypeName(type);
     }
 
-
-    public Class<?> getMapping(ResultSet columnMetaData, Connection cx)
-            throws SQLException {
+    @Override
+    public Class<?> getMapping(ResultSet columnMetaData, Connection cx) throws SQLException {
         return delegate.getMapping(columnMetaData, cx);
     }
 
@@ -128,69 +135,71 @@ public class PostGISPSDialect extends PreparedStatementSQLDialect {
         return delegate.lookupGeneratedValuesPostInsert();
     }
 
-    public Object getNextAutoGeneratedValue(String schemaName,
-            String tableName, String columnName, Connection cx)
+    @Override
+    public Object getNextAutoGeneratedValue(String schemaName, String tableName, String columnName, Connection cx)
             throws SQLException {
-        return delegate.getNextAutoGeneratedValue(schemaName, tableName,
-                columnName, cx);
+        return delegate.getNextAutoGeneratedValue(schemaName, tableName, columnName, cx);
     }
 
     @Override
-    public Object getLastAutoGeneratedValue(String schemaName, String tableName, String columnName,
-            Connection cx) throws SQLException {
+    public Object getLastAutoGeneratedValue(String schemaName, String tableName, String columnName, Connection cx)
+            throws SQLException {
         return delegate.getLastAutoGeneratedValue(schemaName, tableName, columnName, cx);
     }
 
-    public Object getNextSequenceValue(String schemaName, String sequenceName,
-            Connection cx) throws SQLException {
+    @Override
+    public Object getNextSequenceValue(String schemaName, String sequenceName, Connection cx) throws SQLException {
         return delegate.getNextSequenceValue(schemaName, sequenceName, cx);
     }
 
-    public String getSequenceForColumn(String schemaName, String tableName,
-            String columnName, Connection cx) throws SQLException {
-        return delegate.getSequenceForColumn(schemaName, tableName, columnName,
-                cx);
+    @Override
+    public String encodeNextSequenceValue(String schemaName, String sequenceName) {
+        return delegate.encodeNextSequenceValue(schemaName, sequenceName);
+    }
+
+    @Override
+    public String getSequenceForColumn(String schemaName, String tableName, String columnName, Connection cx)
+            throws SQLException {
+        return delegate.getSequenceForColumn(schemaName, tableName, columnName, cx);
     }
 
     public boolean isLooseBBOXEnabled() {
         return delegate.isLooseBBOXEnabled();
     }
 
-    public void postCreateTable(String schemaName,
-            SimpleFeatureType featureType, Connection cx) throws SQLException {
+    @Override
+    public void postCreateTable(String schemaName, SimpleFeatureType featureType, Connection cx) throws SQLException {
         delegate.postCreateTable(schemaName, featureType, cx);
     }
 
     @Override
-    public void preDropTable(String schemaName, SimpleFeatureType featureType, Connection cx)
-            throws SQLException {
+    public void preDropTable(String schemaName, SimpleFeatureType featureType, Connection cx) throws SQLException {
         delegate.preDropTable(schemaName, featureType, cx);
     }
 
     @Override
-    public void postDropTable(String schemaName, SimpleFeatureType featureType, Connection cx)
-            throws SQLException {
+    public void postDropTable(String schemaName, SimpleFeatureType featureType, Connection cx) throws SQLException {
         delegate.postDropTable(schemaName, featureType, cx);
     }
 
+    @Override
     public void registerClassToSqlMappings(Map<Class<?>, Integer> mappings) {
         delegate.registerClassToSqlMappings(mappings);
     }
 
-    public void registerSqlTypeNameToClassMappings(
-            Map<String, Class<?>> mappings) {
+    @Override
+    public void registerSqlTypeNameToClassMappings(Map<String, Class<?>> mappings) {
         delegate.registerSqlTypeNameToClassMappings(mappings);
     }
 
     @Override
-    public void registerSqlTypeToSqlTypeNameOverrides(
-            Map<Integer, String> overrides) {
+    public void registerSqlTypeToSqlTypeNameOverrides(Map<Integer, String> overrides) {
         delegate.registerSqlTypeToSqlTypeNameOverrides(overrides);
     }
 
     @Override
-    public void handleUserDefinedType(ResultSet columnMetaData, ColumnMetadata metadata,
-            Connection cx) throws SQLException {
+    public void handleUserDefinedType(ResultSet columnMetaData, ColumnMetadata metadata, Connection cx)
+            throws SQLException {
         delegate.handleUserDefinedType(columnMetaData, metadata, cx);
     }
 
@@ -205,11 +214,11 @@ public class PostGISPSDialect extends PreparedStatementSQLDialect {
     public void setEncodeBBOXFilterAsEnvelope(boolean encodeBBOXFilterAsEnvelope) {
         delegate.setEncodeBBOXFilterAsEnvelope(encodeBBOXFilterAsEnvelope);
     }
-    
+
     @Override
-    public void prepareGeometryValue(Geometry g, int dimension, int srid, Class binding,
-            StringBuffer sql) {
-        if (g != null) {
+    public void prepareGeometryValue(
+            Class<? extends Geometry> gClass, int dimension, int srid, Class binding, StringBuffer sql) {
+        if (gClass != null) {
             sql.append("ST_GeomFromWKB(?, " + srid + ")");
         } else {
             sql.append("?");
@@ -217,14 +226,14 @@ public class PostGISPSDialect extends PreparedStatementSQLDialect {
     }
 
     @Override
-    public void setGeometryValue(Geometry g, int dimension, int srid, Class binding,
-            PreparedStatement ps, int column) throws SQLException {
-        if (g != null && !g.isEmpty()) {
-            if (g instanceof LinearRing ) {
-                //postgis does not handle linear rings, convert to just a line string
+    public void setGeometryValue(Geometry g, int dimension, int srid, Class binding, PreparedStatement ps, int column)
+            throws SQLException {
+        if (g != null) {
+            if (g instanceof LinearRing) {
+                // postgis does not handle linear rings, convert to just a line string
                 g = g.getFactory().createLineString(((LinearRing) g).getCoordinateSequence());
             }
-            
+
             byte[] bytes = new WKBWriter(dimension).write(g);
             ps.setBytes(column, bytes);
         } else {
@@ -234,9 +243,11 @@ public class PostGISPSDialect extends PreparedStatementSQLDialect {
 
     @Override
     public PreparedFilterToSQL createPreparedFilterToSQL() {
-        PostgisPSFilterToSql fts = new PostgisPSFilterToSql(this);
+        PostgisPSFilterToSql fts = new PostgisPSFilterToSql(this, delegate.pgsqlVersion);
+        fts.setFunctionEncodingEnabled(delegate.isFunctionEncodingEnabled());
         fts.setLooseBBOXEnabled(delegate.isLooseBBOXEnabled());
         fts.setEncodeBBOXFilterAsEnvelope(delegate.isEncodeBBOXFilterAsEnvelope());
+        fts.setEscapeBackslash(delegate.isEscapeBackslash());
         return fts;
     }
 
@@ -251,8 +262,70 @@ public class PostGISPSDialect extends PreparedStatementSQLDialect {
     }
 
     @Override
-    public int getGeometryDimension(String schemaName, String tableName, String columnName,
-            Connection cx) throws SQLException {
+    public int getGeometryDimension(String schemaName, String tableName, String columnName, Connection cx)
+            throws SQLException {
         return delegate.getGeometryDimension(schemaName, tableName, columnName, cx);
+    }
+
+    public boolean isFunctionEncodingEnabled() {
+        return delegate.isFunctionEncodingEnabled();
+    }
+
+    public void setFunctionEncodingEnabled(boolean functionEncodingEnabled) {
+        delegate.setFunctionEncodingEnabled(functionEncodingEnabled);
+    }
+
+    @Override
+    protected String getArrayComponentTypeName(AttributeDescriptor att) throws SQLException {
+        if (att == null) {
+            return null;
+        }
+        String name = (String) att.getUserData().get(JDBCDataStore.JDBC_NATIVE_TYPENAME);
+        // in postgresql jdbc the database metadata TYPE_NAME column contains the
+        // array "base type" name, prefixed with an underscore
+        if (name != null && name.startsWith("_")) {
+            return name.substring(1);
+        }
+        return super.getArrayComponentTypeName(att);
+    }
+
+    public void encodeGeometryValue(Geometry value, int dimension, int srid, StringBuffer sql) throws IOException {
+        delegate.encodeGeometryValue(value, dimension, srid, sql);
+    }
+
+    @Override
+    public void encodeGeometryColumnSimplified(
+            GeometryDescriptor gatt, String prefix, int srid, StringBuffer sql, Double distance) {
+        delegate.encodeGeometryColumnSimplified(gatt, prefix, srid, sql, distance);
+    }
+
+    @Override
+    public void encodeGeometryColumnGeneralized(
+            GeometryDescriptor gatt, String prefix, int srid, StringBuffer sql, Double distance) {
+        delegate.encodeGeometryColumnGeneralized(gatt, prefix, srid, sql, distance);
+    }
+
+    PostGISDialect getDelegate() {
+        return delegate;
+    }
+
+    @Override
+    public void initializeConnection(Connection cx) throws SQLException {
+        delegate.initializeConnection(cx);
+    }
+
+    @Override
+    public boolean canSimplifyPoints() {
+        return delegate.canSimplifyPoints();
+    }
+
+    @Override
+    public boolean canGroupOnGeometry() {
+        return delegate.canGroupOnGeometry();
+    }
+
+    @Override
+    public int getDefaultVarcharSize() {
+        return delegate.getDefaultVarcharSize();
     }
 }

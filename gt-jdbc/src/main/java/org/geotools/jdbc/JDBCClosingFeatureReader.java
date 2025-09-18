@@ -19,63 +19,60 @@ package org.geotools.jdbc;
 import java.io.IOException;
 import java.sql.Connection;
 import java.util.NoSuchElementException;
+import org.geotools.api.data.DelegatingFeatureReader;
+import org.geotools.api.data.FeatureReader;
+import org.geotools.api.feature.simple.SimpleFeature;
+import org.geotools.api.feature.simple.SimpleFeatureType;
 
-import org.geotools.data.DelegatingFeatureReader;
-import org.geotools.data.FeatureReader;
-import org.opengis.feature.simple.SimpleFeature;
-import org.opengis.feature.simple.SimpleFeatureType;
-
-/**
- * 
- *
- * @source $URL$
- */
 public class JDBCClosingFeatureReader implements DelegatingFeatureReader<SimpleFeatureType, SimpleFeature> {
 
-    FeatureReader reader;
-    
-    public JDBCClosingFeatureReader( FeatureReader reader ) {
+    FeatureReader<SimpleFeatureType, SimpleFeature> reader;
+
+    public JDBCClosingFeatureReader(FeatureReader<SimpleFeatureType, SimpleFeature> reader) {
         this.reader = reader;
     }
-    
+
+    @Override
     public FeatureReader<SimpleFeatureType, SimpleFeature> getDelegate() {
         return reader;
     }
-    
+
+    @Override
     public SimpleFeatureType getFeatureType() {
-        return (SimpleFeatureType) reader.getFeatureType();
+        return reader.getFeatureType();
     }
 
+    @Override
     public boolean hasNext() throws IOException {
         return reader.hasNext();
     }
 
-    public SimpleFeature next() throws IOException, IllegalArgumentException,
-            NoSuchElementException {
-        return (SimpleFeature) reader.next();
+    @Override
+    public SimpleFeature next() throws IOException, IllegalArgumentException, NoSuchElementException {
+        return reader.next();
     }
 
+    @Override
+    @SuppressWarnings({"PMD.CloseResource", "unchecked"}) // we are actually closing
     public void close() throws IOException {
-        
-        FeatureReader r = reader;
-        while( r instanceof DelegatingFeatureReader ) {
-            if ( r instanceof JDBCFeatureReader ) {
+        FeatureReader<SimpleFeatureType, SimpleFeature> r = reader;
+        while (r instanceof DelegatingFeatureReader) {
+            if (r instanceof JDBCFeatureReader) {
                 break;
             }
-            
-            r = ((DelegatingFeatureReader)r).getDelegate();
+
+            r = ((DelegatingFeatureReader) r).getDelegate();
         }
-        
-        if ( r instanceof JDBCFeatureReader ) {
+
+        if (r instanceof JDBCFeatureReader) {
             JDBCFeatureReader jdbcReader = (JDBCFeatureReader) r;
             JDBCFeatureSource fs = jdbcReader.featureSource;
             Connection cx = jdbcReader.cx;
 
             try {
                 reader.close();
-            }
-            finally {
-                fs.getDataStore().releaseConnection( cx, fs.getState() );
+            } finally {
+                fs.getDataStore().releaseConnection(cx, fs.getState());
             }
         }
     }

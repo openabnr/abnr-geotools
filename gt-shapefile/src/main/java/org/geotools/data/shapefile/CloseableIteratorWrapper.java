@@ -2,7 +2,7 @@
  *    GeoTools - The Open Source Java GIS Toolkit
  *    http://geotools.org
  *
- *    (C) 2002-2011, Open Source Geospatial Foundation (OSGeo)
+ *    (C) 2002-2015, Open Source Geospatial Foundation (OSGeo)
  *
  *    This library is free software; you can redistribute it and/or
  *    modify it under the terms of the GNU Lesser General Public
@@ -18,12 +18,9 @@ package org.geotools.data.shapefile;
 
 import java.io.IOException;
 import java.util.Iterator;
+import org.geotools.api.data.CloseableIterator;
 
-import org.geotools.data.shapefile.index.CloseableIterator;
-
-/**
- * Wraps a plain iterator into a closeable one.
- */
+/** Wraps a plain iterator into a closeable one. */
 class CloseableIteratorWrapper<E> implements CloseableIterator<E> {
     Iterator<E> delegate;
 
@@ -31,20 +28,23 @@ class CloseableIteratorWrapper<E> implements CloseableIterator<E> {
         this.delegate = delegate;
     }
 
+    @Override
     public boolean hasNext() {
         return delegate.hasNext();
     }
 
+    @Override
     public E next() {
         return delegate.next();
     }
 
+    @Override
     public void remove() {
         delegate.remove();
     }
 
+    @Override
     public void close() throws IOException {
         // Just makes the API happy, the delegate does not really have a close method
     }
-
 }

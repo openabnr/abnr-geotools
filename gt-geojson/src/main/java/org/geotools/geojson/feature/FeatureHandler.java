@@ -19,38 +19,46 @@ package org.geotools.geojson.feature;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-
+import org.geotools.api.feature.simple.SimpleFeature;
+import org.geotools.api.feature.simple.SimpleFeatureType;
+import org.geotools.api.referencing.crs.CoordinateReferenceSystem;
 import org.geotools.feature.simple.SimpleFeatureBuilder;
 import org.geotools.feature.simple.SimpleFeatureTypeBuilder;
 import org.geotools.geojson.DelegatingHandler;
+import org.geotools.geojson.GeoJSONUtil;
 import org.geotools.geojson.IContentHandler;
 import org.geotools.geojson.geom.GeometryCollectionHandler;
 import org.geotools.geojson.geom.GeometryHandler;
 import org.json.simple.parser.ParseException;
-import org.opengis.feature.simple.SimpleFeature;
-import org.opengis.feature.simple.SimpleFeatureType;
-import org.opengis.referencing.crs.CoordinateReferenceSystem;
+import org.locationtech.jts.geom.Geometry;
+import org.locationtech.jts.geom.GeometryFactory;
 
-import com.vividsolutions.jts.geom.Geometry;
-import com.vividsolutions.jts.geom.GeometryFactory;
-
-/**
- * 
- *
- * @source $URL$
- */
 public class FeatureHandler extends DelegatingHandler<SimpleFeature> {
 
+    private int fid = 0;
+
+    private String separator = "-";
+
     String id;
+
     Geometry geometry;
+
     List<Object> values;
+
     List<String> properties;
+
     CoordinateReferenceSystem crs;
-   
+
     SimpleFeatureBuilder builder;
+
     AttributeIO attio;
-    
+
     SimpleFeature feature;
+
+    private String baseId = "feature";
+
+    /** should we attempt to automatically build fids */
+    private boolean autoFID = false;
 
     public FeatureHandler() {
         this(null, new DefaultAttributeIO());
@@ -60,150 +68,160 @@ public class FeatureHandler extends DelegatingHandler<SimpleFeature> {
         this.builder = builder;
         this.attio = attio;
     }
-    
+
     @Override
     public boolean startObject() throws ParseException, IOException {
+        if (delegate != NULL) {
+            return delegate.startObject();
+        }
+
         if (properties == NULL_LIST) {
-            properties = new ArrayList();
+            properties = new ArrayList<>();
+        } else if (properties != null) {
+            // this must be the start of a complex object
+            ComplexPropertyHandler propertyHandler = new ComplexPropertyHandler();
+            delegate = propertyHandler;
+            delegate.startObject();
+            values.add(propertyHandler.getValue());
+            return true;
         }
-        else if (properties != null) {
-            //start of a new object in properties means a geometry
-            delegate = new GeometryHandler(new GeometryFactory());
-        }
-        
+
         return super.startObject();
     }
-    
+
+    @Override
     public boolean startObjectEntry(String key) throws ParseException, IOException {
+        if (delegate != NULL) {
+            return delegate.startObjectEntry(key);
+        }
         if ("id".equals(key) && properties == null) {
             id = "";
             return true;
-        }
-        else if ("crs".equals(key)) {
+        } else if ("crs".equals(key) && properties == null /* it's top level, not a property */) {
             delegate = new CRSHandler();
             return true;
-        }
-        else if ("geometry".equals(key)) {
+        } else if ("geometry".equals(key) && properties == null /* it's top level, not a property */) {
             delegate = new GeometryHandler(new GeometryFactory());
             return true;
-        }
-        else if ("properties".equals(key) && delegate == NULL) {
+        } else if ("properties".equals(key) && delegate == NULL) {
             properties = NULL_LIST;
-            values = new ArrayList();
-        }
-        else if (properties != null && delegate == NULL) {
+            values = new ArrayList<>();
+        } else if (properties != null && delegate == NULL) {
             properties.add(key);
             return true;
         }
-        
+
         return super.startObjectEntry(key);
     }
-    
+
     @Override
     public boolean startArray() throws ParseException, IOException {
         if (properties != null && delegate == NULL) {
-            //array inside of properties
-            delegate = new ArrayHandler();
+            // array inside of properties
+            ComplexPropertyHandler propertyHandler = new ComplexPropertyHandler();
+            delegate = propertyHandler;
+            delegate.startArray();
+            values.add(propertyHandler.getValue());
+            return true;
         }
-        
+
         return super.startArray();
     }
-    
+
     @Override
     public boolean endArray() throws ParseException, IOException {
-        if (delegate instanceof ArrayHandler) {
-            super.endArray();
-            values.add(((ArrayHandler) delegate).getValue());
+        if (!delegate.endArray()) {
+            // Delegate is done
             delegate = NULL;
         }
-        return super.endArray();
+        return true; // But we're not
     }
-    
+
     @Override
     public boolean endObject() throws ParseException, IOException {
         if (delegate instanceof IContentHandler) {
-            ((IContentHandler) delegate).endObject();
-            
+            boolean keepGoing = delegate.endObject();
+
             if (delegate instanceof GeometryHandler) {
-                Geometry g = ((IContentHandler<Geometry>)delegate).getValue();
-                if (g == null && 
-                    ((GeometryHandler)delegate).getDelegate() instanceof GeometryCollectionHandler) {
-                    //this means that the collecetion handler is still parsing objects, continue 
-                    // to delegate to it
-                }
-                else {
+                GeometryHandler geometryHandler = (GeometryHandler) delegate;
+                Geometry g = geometryHandler.getValue();
+                if (g != null || !(((GeometryHandler) delegate).getDelegate() instanceof GeometryCollectionHandler)) {
                     if (properties != null) {
-                        //this is a regular property
+                        // this is a regular property
                         values.add(g);
-                    }
-                    else {
-                        //its the default geometry
+                    } else {
+                        // its the default geometry
                         geometry = g;
                     }
                     delegate = NULL;
                 }
-            }
-            else if (delegate instanceof CRSHandler) {
-                crs = ((CRSHandler)delegate).getValue();
+            } else if (delegate instanceof CRSHandler) {
+                crs = ((CRSHandler) delegate).getValue();
                 delegate = UNINITIALIZED;
             }
-            
+            if (!keepGoing && delegate instanceof ComplexPropertyHandler) {
+                // Oh, perhaps we added something that should have been a Geometry object
+                int valueCount = values.size();
+                if (valueCount > 0) {
+                    Object justAdded = values.get(valueCount - 1);
+                    Object perhapsReplacedGeometry = GeoJSONUtil.replaceGeometry(justAdded);
+                    values.set(valueCount - 1, perhapsReplacedGeometry);
+                }
+                delegate = NULL;
+            }
+
             return true;
-        }
-        else if (delegate == UNINITIALIZED) {
+        } else if (delegate == UNINITIALIZED) {
             delegate = NULL;
             return true;
-        }
-        else if (properties != null) {
+        } else if (properties != null) {
             if (builder == null) {
-                //no builder specified, build on the fly
+                // no builder specified, build on the fly
                 builder = createBuilder();
             }
             for (int i = 0; i < properties.size(); i++) {
                 String att = properties.get(i);
                 Object val = values.get(i);
-                
+
                 if (val instanceof String) {
-                    val = attio.parse(att, (String)val);
+                    val = attio.parse(att, (String) val);
                 }
-                
-                builder.set(att, val );
+
+                builder.set(att, val);
             }
-            
+
             properties = null;
             values = null;
             return true;
-        }
-        else {
+        } else {
             feature = buildFeature();
             id = null;
             geometry = null;
             properties = null;
             values = null;
-            
+
             return true;
         }
     }
-    
+
     @Override
     public boolean primitive(Object value) throws ParseException, IOException {
         if (delegate instanceof GeometryHandler && value == null) {
             delegate = NULL;
             return true;
-        }
-        else if ("".equals(id)) {
+        } else if ("".equals(id)) {
             id = value.toString();
+            setFID(id);
             return true;
-        }
-        else if (values != null && delegate == NULL) {
-            //use the attribute parser 
+        } else if (values != null && delegate == NULL) {
+            // use the attribute parser
             values.add(value);
             return true;
         }
-        
+
         return super.primitive(value);
     }
-    
+
     @Override
     public SimpleFeature getValue() {
         return feature;
@@ -212,15 +230,15 @@ public class FeatureHandler extends DelegatingHandler<SimpleFeature> {
     public CoordinateReferenceSystem getCRS() {
         return crs;
     }
-    
+
     public void setCRS(CoordinateReferenceSystem crs) {
         this.crs = crs;
     }
-    
+
     public void init() {
         feature = null;
     }
-    
+
     SimpleFeatureBuilder createBuilder() {
         SimpleFeatureTypeBuilder typeBuilder = new SimpleFeatureTypeBuilder();
         typeBuilder.setName("feature");
@@ -237,7 +255,7 @@ public class FeatureHandler extends DelegatingHandler<SimpleFeature> {
         if (geometry != null) {
             addGeometryType(typeBuilder, geometry);
         }
-        
+
         return new SimpleFeatureBuilder(typeBuilder.buildFeatureType());
     }
 
@@ -247,13 +265,13 @@ public class FeatureHandler extends DelegatingHandler<SimpleFeature> {
     }
 
     SimpleFeature buildFeature() {
-      
+
         SimpleFeatureBuilder builder = this.builder != null ? this.builder : createBuilder();
         SimpleFeatureType featureType = builder.getFeatureType();
-        SimpleFeature f = builder.buildFeature(id);
+        SimpleFeature f = builder.buildFeature(getFID());
         if (geometry != null) {
-            if(featureType.getGeometryDescriptor() == null) {
-                //GEOT-4293, case of geometry coming after properties, we have to retype 
+            if (featureType.getGeometryDescriptor() == null) {
+                // GEOT-4293, case of geometry coming after properties, we have to retype
                 // the builder
                 // JD: this is ugly, we should really come up with a better way to store internal
                 // state of properties, and avoid creating the builder after the properties object
@@ -265,24 +283,60 @@ public class FeatureHandler extends DelegatingHandler<SimpleFeature> {
                 featureType = typeBuilder.buildFeatureType();
                 SimpleFeatureBuilder newBuilder = new SimpleFeatureBuilder(featureType);
                 newBuilder.init(f);
-                f = newBuilder.buildFeature(id);
+                f = newBuilder.buildFeature(getFID());
             }
             f.setAttribute(featureType.getGeometryDescriptor().getLocalName(), geometry);
-        }        
+        }
+        incrementFID();
         return f;
     }
-//    "{" +
-//    "  'type': 'Feature'," +
-//    "  'geometry': {" +
-//    "     'type': 'Point'," +
-//    "     'coordinates': [" + val + "," + val + "]" +
-//    "   }, " +
-//    "'  properties': {" +
-//    "     'int': 1," +
-//    "     'double': " + (double)val + "," +
-//    "     'string': '" + toString(val) + "'" +
-//    "   }," +
-//    "   'id':'widgets." + val + "'" +
-//    "}";
-    
+    // "{" +
+    // " 'type': 'Feature'," +
+    // " 'geometry': {" +
+    // " 'type': 'Point'," +
+    // " 'coordinates': [" + val + "," + val + "]" +
+    // " }, " +
+    // "' properties': {" +
+    // " 'int': 1," +
+    // " 'double': " + (double)val + "," +
+    // " 'string': '" + toString(val) + "'" +
+    // " }," +
+    // " 'id':'widgets." + val + "'" +
+    // "}";
+
+    /** Add one to the current ID */
+    private void incrementFID() {
+        fid = fid + 1;
+    }
+
+    private void setFID(String f) {
+        int index = f.lastIndexOf('.');
+        if (index < 0) {
+            index = f.indexOf('-');
+            if (index >= 0) {
+                separator = "-";
+            } else {
+                autoFID = false;
+                id = f;
+                return;
+            }
+        } else {
+            separator = ".";
+        }
+        baseId = f.substring(0, index);
+        try {
+            fid = Integer.parseInt(f.substring(index + 1));
+        } catch (NumberFormatException e) {
+            autoFID = false;
+            id = f;
+        }
+    }
+
+    private String getFID() {
+        if (id == null || autoFID) {
+            return baseId + separator + fid;
+        } else {
+            return id;
+        }
+    }
 }

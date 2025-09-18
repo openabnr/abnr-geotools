@@ -19,18 +19,16 @@ package org.geotools.data.shapefile.shp;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.logging.Logger;
+import org.geotools.util.logging.Logging;
 
 /**
- * 
  * @author jamesm
  * @author Ian Schneider
- *
- *
- * @source $URL$
- *         http://svn.geotools.org/geotools/trunk/gt/modules/plugin/shapefile/src/main/java/org
- *         /geotools/data/shapefile/shp/ShapefileHeader.java $
  */
 public class ShapefileHeader {
+
+    static final Logger LOGGER = Logging.getLogger(ShapefileHeader.class);
 
     public static final int MAGIC = 9994;
 
@@ -56,7 +54,7 @@ public class ShapefileHeader {
         if (fileCode != MAGIC) {
             String message = "Wrong magic number, expected " + MAGIC + ", got " + fileCode;
             if (!strict) {
-                System.err.println(message);
+                LOGGER.info(message);
             } else {
                 throw new java.io.IOException(message);
             }
@@ -65,9 +63,9 @@ public class ShapefileHeader {
 
     private void checkVersion(boolean strict) throws java.io.IOException {
         if (version != VERSION) {
-            String message = "Wrong version, expected " + MAGIC + ", got " + version;
+            String message = "Wrong version, expected " + VERSION + ", got " + version;
             if (!strict) {
-                System.err.println(message);
+                LOGGER.info(message);
             } else {
                 throw new java.io.IOException(message);
             }
@@ -96,14 +94,21 @@ public class ShapefileHeader {
         maxY = file.getDouble();
 
         // skip remaining unused bytes
-        file.order(ByteOrder.BIG_ENDIAN);// well they may not be unused
+        file.order(ByteOrder.BIG_ENDIAN); // well they may not be unused
         // forever...
         file.position(file.position() + 32);
-
     }
 
-    public void write(ByteBuffer file, ShapeType type, int numGeoms, int length, double minX,
-            double minY, double maxX, double maxY) throws IOException {
+    public void write(
+            ByteBuffer file,
+            ShapeType type,
+            int numGeoms,
+            int length,
+            double minX,
+            double minY,
+            double maxX,
+            double maxY)
+            throws IOException {
         file.order(ByteOrder.BIG_ENDIAN);
 
         file.putInt(MAGIC);
@@ -160,11 +165,22 @@ public class ShapefileHeader {
         return maxY;
     }
 
+    @Override
     public String toString() {
-        String res = new String("ShapeFileHeader[ size " + fileLength + " version " + version
-                + " shapeType " + shapeType + " bounds " + minX + "," + minY + "," + maxX + ","
-                + maxY + " ]");
-        return res;
+        return "ShapeFileHeader[ size "
+                + fileLength
+                + " version "
+                + version
+                + " shapeType "
+                + shapeType
+                + " bounds "
+                + minX
+                + ","
+                + minY
+                + ","
+                + maxX
+                + ","
+                + maxY
+                + " ]";
     }
-
 }
