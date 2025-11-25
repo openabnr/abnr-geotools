@@ -1356,6 +1356,11 @@ public class OracleDialect extends PreparedStatementSQLDialect {
         overrides.put(Types.DATE, "DATE");
         // overriding default java.sql.Timestamp to Oracle DATE mapping
         overrides.put(Types.TIMESTAMP, "TIMESTAMP");
+
+        // hckim: !!
+        // overrides.put(Types.REAL, "NUMERIC");
+        // overrides.put(Types.DOUBLE, "NUMERIC");
+        // overrides.put(Types.FLOAT, "NUMERIC");
     }
 
     @Override

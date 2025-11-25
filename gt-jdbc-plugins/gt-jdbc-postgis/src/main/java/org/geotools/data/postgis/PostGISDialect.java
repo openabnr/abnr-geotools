@@ -1064,6 +1064,11 @@ public class PostGISDialect extends BasicSQLDialect {
         overrides.put(Types.BOOLEAN, "BOOL");
         overrides.put(Types.BLOB, "BYTEA");
         overrides.put(Types.CLOB, "TEXT");
+
+        // hckim: !!
+        // overrides.put(Types.REAL, "NUMERIC");
+        // overrides.put(Types.DOUBLE, "NUMERIC");
+        // overrides.put(Types.FLOAT, "NUMERIC");
     }
 
     @Override

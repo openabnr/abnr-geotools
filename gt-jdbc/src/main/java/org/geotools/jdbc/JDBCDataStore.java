@@ -3169,8 +3169,8 @@ public final class JDBCDataStore extends ContentDataStore implements GmlObjectSt
             ) { // NUMERIC TYPE
                 if (featureType != null) {
                     AttributeDescriptor att = featureType.getDescriptor(columnNames[i]);
-                    Integer scaleObj = (Integer) att.getUserData().get("numeric.scale");
-                    Integer lengthObj = (Integer) att.getUserData().get("numeric.length");
+                    Integer scaleObj = (Integer) att.getUserData().get("field@scale");
+                    Integer lengthObj = (Integer) att.getUserData().get("field@length");
                     if (scaleObj != null) {
                         scale = scaleObj.intValue();
                     }

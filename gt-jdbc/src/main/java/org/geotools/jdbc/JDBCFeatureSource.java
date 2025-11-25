@@ -353,9 +353,9 @@ public class JDBCFeatureSource extends ContentFeatureSource {
                     ab.setBinding(binding);
                     // hckim: length, scale
                     ab.setLength(column.length);
-                    ab.addUserData("numeric.length", column.length);
+                    ab.addUserData("field@length", column.length);
                     int scale = column.scale;
-                    ab.addUserData("numeric.scale", scale);
+                    ab.addUserData("field@scale", scale);
                     att = ab.buildDescriptor(name, ab.buildType());
                 }
                 // mark primary key columns

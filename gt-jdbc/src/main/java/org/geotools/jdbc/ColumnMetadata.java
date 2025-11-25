@@ -23,7 +23,7 @@ public class ColumnMetadata {
 
     Filter restriction;
     /** The column java type, if known */
-    Class binding;
+    Class<?> binding;
     /** The column name */
     String name;
     /** The native type name */
@@ -42,11 +42,11 @@ public class ColumnMetadata {
     /** Column Remarks */
     String remarks;
 
-    public Class getBinding() {
+    public Class<?> getBinding() {
         return binding;
     }
 
-    public void setBinding(Class binding) {
+    public void setBinding(Class<?> binding) {
         this.binding = binding;
     }
 

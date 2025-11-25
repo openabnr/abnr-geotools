@@ -557,8 +557,8 @@ class ShapefileFeatureSource extends ContentFeatureSource {
                         length--; // exclude dot
                     }
                     if (header.getFieldType(i) != 'F') {
-                        build.addUserData("numeric.length", length);
-                        build.addUserData("numeric.scale", scale);
+                        build.addUserData("field@length", length);
+                        build.addUserData("field@scale", scale);
                     }
 
                     build.setNillable(true);

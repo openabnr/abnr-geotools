@@ -339,7 +339,7 @@ public class ShapefileDataStore extends ContentDataStore implements FileDataStor
 
         for (int i = 0, ii = featureType.getAttributeCount(); i < ii; i++) {
             AttributeDescriptor type = featureType.getDescriptor(i);
-            Integer scale = (Integer) type.getUserData().get("numeric.scale");
+            Integer scale = (Integer) type.getUserData().get("field@scale");
 
             Class<?> colType = type.getType().getBinding();
             String colName = type.getLocalName();
